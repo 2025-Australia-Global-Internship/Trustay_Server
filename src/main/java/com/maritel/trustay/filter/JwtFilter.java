@@ -28,12 +28,21 @@ public class JwtFilter extends OncePerRequestFilter {
 
         String token = extractToken(request);
 
-        if (token != null && !jwtUtil.isTokenExpired(token)) {
-            String username = jwtUtil.extractUsername(token);
-            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-            UsernamePasswordAuthenticationToken authToken =
-                    new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-            SecurityContextHolder.getContext().setAuthentication(authToken);
+        if (token != null) {
+            try {
+                if (!jwtUtil.isTokenExpired(token)) {
+                    String username = jwtUtil.extractUsername(token);
+                    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+                    UsernamePasswordAuthenticationToken authToken =
+                            new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                }
+            } catch (Exception e) {
+                // 토큰이 잘못됐어도 filterChain은 계속 진행
+                // permitAll() 경로는 인증 없이 통과되고,
+                // 인증이 필요한 경로는 Security가 알아서 401/403 처리
+                SecurityContextHolder.clearContext();
+            }
         }
 
         filterChain.doFilter(request, response);
