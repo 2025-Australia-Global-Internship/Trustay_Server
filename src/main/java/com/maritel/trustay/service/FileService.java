@@ -40,7 +40,7 @@ public class FileService {
             throw new BadRequestException("파일이 제공되지 않았습니다.");
         }
 
-        String fileExt = FileUtils.extension(file.getContentType());
+        String fileExt = resolveImageExtension(file);
 
         log.debug("** fileUpload originalFileName = {} **", file.getOriginalFilename());
 
@@ -99,7 +99,7 @@ public class FileService {
         }
 
         // URL 생성 (File.separator 대신 "/" 사용)
-        String uploadedURLPath = String.format("https://%s/images/%s/%s",
+        String uploadedURLPath = String.format("http://%s:8080/images/%s/%s",
                 serverDomain, datePath, filename);
         return uploadedURLPath;
     }
@@ -111,7 +111,7 @@ public class FileService {
         if (file == null || file.isEmpty()) {
             throw new BadRequestException("파일이 제공되지 않았습니다.");
         }
-        String fileExt = FileUtils.extension(file.getContentType());
+        String fileExt = resolveImageExtension(file);
         if (!(fileExt.equals(".jpg") || fileExt.equals(".jpeg") || fileExt.equals(".png")
                 || fileExt.equals(".heic") || fileExt.equals(".heif"))) {
             log.warn("계약 스캔에 지원하지 않는 형식: {}", fileExt);
@@ -145,7 +145,7 @@ public class FileService {
             log.error("PDF 저장 실패", e);
             throw new RuntimeException("PDF 저장 실패: " + e.getLocalizedMessage());
         }
-        return String.format("https://%s/images/%s/%s", serverDomain, relativeDir.replace("\\", "/"), fileName);
+        return String.format("http://%s:8080/images/%s/%s", serverDomain, relativeDir.replace("\\", "/"), fileName);
     }
 
     private String uploadLocalUnderPrefix(String pathPrefix, String filename, MultipartFile file)
@@ -173,7 +173,7 @@ public class FileService {
             throw new RuntimeException("파일 업로드 실패: " + e.getLocalizedMessage());
         }
 
-        return String.format("https://%s/images/%s/%s",
+        return String.format("http://%s:8080/images/%s/%s",
                 serverDomain, relativeDir.replace("\\", "/"), filename);
     }
 
@@ -188,5 +188,43 @@ public class FileService {
 
         log.debug("생성된 파일명: {}", newFileName);
         return newFileName;
+    }
+
+    /**
+     * 안전한 이미지 확장자 해석:
+     * 1) 먼저 contentType → extension(FileUtils.extension) 시도
+     * 2) FileUtils.extension이 ".bin"을 반환하거나 예외가 발생하면 업로드된 originalFilename의 확장자(소문자)를 사용
+     * 3) 그래도 확장자를 찾지 못하면 ".bin"을 반환
+     */
+    private String resolveImageExtension(MultipartFile file) {
+        if (file == null) {
+            return ".bin";
+        }
+
+        String contentType = file.getContentType();
+        try {
+            if (contentType != null && !contentType.isBlank()) {
+                String ext = FileUtils.extension(contentType);
+                if (ext != null && !ext.isBlank() && !ext.equalsIgnoreCase(".bin")) {
+                    return ext.toLowerCase();
+                }
+            }
+        } catch (Exception e) {
+            // content-type으로부터 확장자 결정에 실패한 경우 원본 파일명에서 추출하도록 로그만 남김
+            log.debug("contentType -> extension 변환 실패 또는 알 수 없는 MIME 타입 (fallback to filename ext): {}", e.getMessage());
+        }
+
+        // original filename에서 확장자 추출
+        String original = file.getOriginalFilename();
+        if (original != null) {
+            int idx = original.lastIndexOf('.');
+            if (idx >= 0 && idx < original.length() - 1) {
+                String ext = original.substring(idx).toLowerCase();
+                return ext;
+            }
+        }
+
+        // 최후의 수단
+        return ".bin";
     }
 }

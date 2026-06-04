@@ -28,4 +28,21 @@ public class Image extends BaseEntity {
         this.imageUrl = imageUrl;
         this.originalName = originalName;
     }
+    
+    @PrePersist
+    void ensureOriginalName() {
+        if (originalName != null && !originalName.isBlank()) {
+            return;
+        }
+        
+        if (imageUrl == null || imageUrl.isBlank()) {
+            return;
+        }
+        
+        String normalizedUrl = imageUrl.replace('\\', '/');
+        int lastSlash = normalizedUrl.lastIndexOf('/');
+        this.originalName = lastSlash >= 0 && lastSlash < normalizedUrl.length() - 1
+                ? normalizedUrl.substring(lastSlash + 1)
+                : normalizedUrl;
+    }
 }
