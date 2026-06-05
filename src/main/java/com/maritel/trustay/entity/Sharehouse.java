@@ -10,7 +10,7 @@ import org.hibernate.annotations.ColumnDefault;
 
 @Entity
 @Table(name = "TBL_SHAREHOUSE")
-@Check(constraints = "view_count >= 0 AND wish_count >= 0 AND rent_price > 0")
+@Check(constraints = "viewCount >= 0 AND wishCount >= 0 AND rentPrice > 0")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Sharehouse extends BaseEntity {

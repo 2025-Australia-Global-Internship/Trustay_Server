@@ -28,6 +28,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 
 @Slf4j
@@ -75,6 +76,14 @@ public class SharehouseService {
     public SharehouseRes registerSharehouse(String userEmail, SharehouseReq req) {
         Member host = memberRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new IllegalArgumentException("사용자 정보를 찾을 수 없습니다."));
+
+        // 매물 등록 시 TENANT 권한만 가진 사용자는 HOST 권한도 함께 부여
+        if (host.getProfile() != null) {
+            Set<Role> roles = host.getProfile().getRoles();
+            if (roles.size() == 1 && roles.contains(Role.TENANT)) {
+                host.getProfile().addRole(Role.HOST);
+            }
+        }
 
         Map<String, Double> coords = geocodingService.getCoordinates(req.getAddress());
         Double latitude = (coords != null) ? coords.get("lat") : 0.0;
