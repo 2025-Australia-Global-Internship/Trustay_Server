@@ -23,7 +23,7 @@ public class SharehouseResultRes {
     private Integer roomCount;
     private Integer bathroomCount;
     private Integer currentResidents;
-    private String homeRulse;
+    private String homeRules;
     private String features;
     private Integer viewCount;
     private String hostName; // 집주인 이름 표시
@@ -51,7 +51,7 @@ public class SharehouseResultRes {
                 .roomCount(sharehouse.getRoomCount())
                 .bathroomCount(sharehouse.getBathroomCount())
                 .currentResidents(sharehouse.getCurrentResidents())
-                .homeRulse(sharehouse.getHomeRules())
+                .homeRules(sharehouse.getHomeRules())
                 .features(sharehouse.getFeatures())
                 .viewCount(sharehouse.getViewCount())
                 .hostName(sharehouse.getHost().getName())

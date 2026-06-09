@@ -1,9 +1,6 @@
 package com.maritel.trustay.controller;
 
-import lombok.Getter;
 import org.springframework.web.bind.annotation.RequestBody;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.maritel.trustay.constant.ApprovalStatus;
 import com.maritel.trustay.dto.req.SharehouseReq;
 import com.maritel.trustay.dto.req.SharehouseSearchReq;
@@ -12,8 +9,6 @@ import com.maritel.trustay.dto.res.*;
 import com.maritel.trustay.service.FileService;
 import com.maritel.trustay.service.SharehouseService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -144,6 +139,14 @@ public class SharehouseController {
     @GetMapping("/{houseId}")
     public ResponseEntity<DataResponse<SharehouseResultRes>> getSharehouseDetail(@PathVariable Long houseId) {
         SharehouseResultRes response = sharehouseService.getSharehouseDetail(houseId);
+        return ResponseEntity.ok(DataResponse.of(ResponseCode.SUCCESS, response));
+    }
+
+    @Operation(summary = "현재 거주 매물 조회", description = "로그인한 세입자의 현재 거주 중인 매물을 조회합니다.")
+    @GetMapping("/me/current")
+    public ResponseEntity<DataResponse<SharehouseRes>> getMyCurrentSharehouse(Principal principal) {
+        String email = principal.getName();
+        SharehouseRes response = sharehouseService.getMyCurrentSharehouse(email);
         return ResponseEntity.ok(DataResponse.of(ResponseCode.SUCCESS, response));
     }
 

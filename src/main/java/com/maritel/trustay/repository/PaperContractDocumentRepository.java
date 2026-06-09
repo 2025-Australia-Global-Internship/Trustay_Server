@@ -10,4 +10,6 @@ import java.util.List;
 public interface PaperContractDocumentRepository extends JpaRepository<PaperContractDocument, Long> {
 
     List<PaperContractDocument> findByChatRoom_IdOrderByRegTimeDesc(Long roomId);
+
+    List<PaperContractDocument> findByUploadedBy_IdOrderByRegTimeDesc(Long memberId);
 }

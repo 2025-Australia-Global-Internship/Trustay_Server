@@ -1,5 +1,6 @@
 package com.maritel.trustay.dto.req;
 
+import com.maritel.trustay.constant.ApprovalStatus;
 import com.maritel.trustay.constant.HouseType;
 import lombok.Getter;
 import lombok.Setter;
@@ -24,6 +25,8 @@ public class SharehouseSearchReq {
     private Integer minRoomCount;      // 방 개수 (최소 n개 이상)
     private Integer minBathroomCount;  // 화장실 개수 (최소 n개 이상)
     private Integer currentResidents;  // 현재 거주 인원 (정확히 n명)
+
+    private ApprovalStatus status;     // 승인 상태 필터 (예: PENDING)
 
     // 4. 옵션 (예: ["WIFI", "PARKING"])
     private List<String> homeRules;

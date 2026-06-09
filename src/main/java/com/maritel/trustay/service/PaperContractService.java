@@ -7,8 +7,8 @@ import com.maritel.trustay.constant.PaperContractScanStatus;
 import com.maritel.trustay.dto.res.ChatMessageRes;
 import com.maritel.trustay.dto.res.PaperContractDocumentRes;
 import com.maritel.trustay.dto.res.PaperContractScanRes;
-import com.maritel.trustay.entity.ChatRoom;
 import com.maritel.trustay.entity.Member;
+import com.maritel.trustay.entity.ChatRoom;
 import com.maritel.trustay.entity.PaperContractDocument;
 import com.maritel.trustay.repository.ChatRoomRepository;
 import com.maritel.trustay.repository.MemberRepository;
@@ -31,6 +31,7 @@ import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -165,6 +166,26 @@ public class PaperContractService {
                 .status(doc.getStatus())
                 .regTime(doc.getRegTime())
                 .build();
+    }
+
+    @Transactional(readOnly = true)
+    public List<PaperContractDocumentRes> getMyDocuments(String memberEmail) {
+        Member member = memberRepository.findByEmail(memberEmail)
+                .orElseThrow(() -> new EntityNotFoundException("사용자를 찾을 수 없습니다."));
+
+        return paperContractDocumentRepository.findByUploadedBy_IdOrderByRegTimeDesc(member.getId())
+                .stream()
+                .map(doc -> PaperContractDocumentRes.builder()
+                        .id(doc.getId())
+                        .roomId(doc.getChatRoom() != null ? doc.getChatRoom().getId() : null)
+                        .houseId(doc.getSharehouse() != null ? doc.getSharehouse().getId() : null)
+                        .pdfUrl(doc.getPdfUrl())
+                        .ocrText(doc.getOcrText())
+                        .sourceImageUrls(parseSourceUrls(doc.getSourceImageUrlsJson()))
+                        .status(doc.getStatus())
+                        .regTime(doc.getRegTime())
+                        .build())
+                .collect(Collectors.toList());
     }
 
     private List<String> parseSourceUrls(String json) {

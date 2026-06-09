@@ -1,6 +1,7 @@
 package com.maritel.trustay.controller;
 
 import com.maritel.trustay.client.TossPaymentsApiException;
+import com.maritel.trustay.constant.PaymentType;
 import com.maritel.trustay.dto.req.DutchPayCreateReq;
 import com.maritel.trustay.dto.req.PaymentConfirmReq;
 import com.maritel.trustay.dto.req.RentPaymentPrepareReq;
@@ -11,9 +12,11 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.security.Principal;
 import java.util.List;
 
@@ -85,6 +88,21 @@ public class PaymentController {
     public ResponseEntity<DataResponse<List<PendingPaymentRes>>> myPending(Principal principal) {
         try {
             List<PendingPaymentRes> list = paymentService.listMyPendingPayments(principal.getName());
+            return ResponseEntity.ok(DataResponse.of(ResponseCode.SUCCESS, list));
+        } catch (IllegalArgumentException e) {
+            return badRequest(e.getMessage());
+        }
+    }
+
+    @Operation(summary = "내 결제 이력 조회")
+    @GetMapping("/me/history")
+    public ResponseEntity<DataResponse<List<PaymentHistoryRes>>> myHistory(
+            Principal principal,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @RequestParam(required = false) PaymentType type) {
+        try {
+            List<PaymentHistoryRes> list = paymentService.getMyPaymentHistory(principal.getName(), from, to, type);
             return ResponseEntity.ok(DataResponse.of(ResponseCode.SUCCESS, list));
         } catch (IllegalArgumentException e) {
             return badRequest(e.getMessage());

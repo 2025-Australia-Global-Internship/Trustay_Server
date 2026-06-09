@@ -67,9 +67,6 @@ public class ChatRoomService {
     public List<ChatRoomListRes> getMyChatRooms(Long memberId) {
         List<ChatRoom> rooms = chatRoomRepository.findActiveRoomsByMemberId(memberId);
 
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new EntityNotFoundException("사용자를 찾을 수 없습니다."));
-
         return rooms.stream().map(room -> {
             // 마지막 메시지 조회 (방 번호로 메시지 중 가장 최근 것 하나)
             // ChatMessageRepository에 별도 쿼리 작성이 필요할 수 있으나, 기본 List 조회 후 처리
@@ -79,6 +76,12 @@ public class ChatRoomService {
             // 상대방 찾기
             Member other = room.getSender().getId().equals(memberId) ? room.getReceiver() : room.getSender();
 
+            // 상대방 프로필 이미지 URL 추출 (Profile / Image가 null일 수 있어 안전하게 처리)
+            String otherProfileImageUrl = null;
+            if (other.getProfile() != null && other.getProfile().getProfileImage() != null) {
+                otherProfileImageUrl = other.getProfile().getProfileImage().getImageUrl();
+            }
+
             return ChatRoomListRes.builder()
                     .roomId(room.getId())
                     .houseId(room.getSharehouse().getId())
@@ -87,7 +90,7 @@ public class ChatRoomService {
                     .lastMessage(lastMsg != null ? lastMsg.getMessage() : "대화 내용이 없습니다.")
                     .lastSenderName(lastMsg != null ? lastMsg.getSender().getName() : "")
                     .lastMessageTime(lastMsg != null ? lastMsg.getRegTime().toString() : "")
-                    .profileImageUrl(member != null ? member.getProfile().getProfileImage().getImageUrl() : "")
+                    .profileImageUrl(otherProfileImageUrl)
                     .build();
         }).collect(Collectors.toList());
     }

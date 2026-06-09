@@ -45,6 +45,17 @@ public class PostController {
         return ResponseEntity.ok(DataResponse.of(ResponseCode.SUCCESS, response));
     }
 
+    @Operation(summary = "내가 작성한 게시글 목록", description = "로그인한 사용자가 작성한 게시글을 조회합니다.")
+    @GetMapping("/me")
+    public ResponseEntity<DataResponse<PageResponse<PostRes>>> getMyPosts(
+            Principal principal,
+            @PageableDefault(size = 10, sort = "regTime", direction = Sort.Direction.DESC) Pageable pageable) {
+        String userEmail = principal.getName();
+        Page<PostRes> resultPage = postService.getMyPosts(userEmail, pageable);
+        PageResponse<PostRes> response = new PageResponse<>(resultPage);
+        return ResponseEntity.ok(DataResponse.of(ResponseCode.SUCCESS, response));
+    }
+
     @Operation(summary = "일반 커뮤니티 게시글 목록", description = "일반 커뮤니티의 게시글 목록을 조회합니다. (공지 먼저, 최신순)")
     @GetMapping("/community/{communityId}")
     public ResponseEntity<DataResponse<PageResponse<PostRes>>> getCommunityPosts(

@@ -32,27 +32,27 @@ public class DataResponse<T> implements Serializable {
 
     private T data;
 
-    public static DataResponse of() {
-        DataResponse response = new DataResponse();
+    public static DataResponse<Void> of() {
+        DataResponse<Void> response = new DataResponse<>();
         return response;
     }
 
     @SuppressWarnings("unchecked")
     public static <T> DataResponse<T> of(T data) {
-        DataResponse response = new DataResponse();
+        DataResponse<T> response = new DataResponse<>();
         response.setData(data);
         return response;
     }
 
-    public static DataResponse of(ResponseCode responseCode) {
-        DataResponse response = new DataResponse();
+    public static DataResponse<Void> of(ResponseCode responseCode) {
+        DataResponse<Void> response = new DataResponse<>();
         response.setCode(responseCode.getCode());
         response.setMessage(responseCode.getMessage());
         return response;
     }
 
-    public static DataResponse of(int code, String message) {
-        DataResponse response = new DataResponse();
+    public static DataResponse<Void> of(int code, String message) {
+        DataResponse<Void> response = new DataResponse<>();
         response.setCode(code);
         response.setMessage(message);
         return response;
@@ -60,7 +60,7 @@ public class DataResponse<T> implements Serializable {
 
     @SuppressWarnings("unchecked")
     public static <T> DataResponse<T> of(ResponseCode responseCode, T data) {
-        DataResponse response = new DataResponse();
+        DataResponse<T> response = new DataResponse<>();
         response.setCode(responseCode.getCode());
         response.setMessage(responseCode.getMessage());
         response.setData(data);
@@ -69,7 +69,7 @@ public class DataResponse<T> implements Serializable {
 
     @SuppressWarnings("unchecked")
     public static <T> DataResponse<T> of(int code, String message, T data) {
-        DataResponse response = new DataResponse();
+        DataResponse<T> response = new DataResponse<>();
         response.setCode(code);
         response.setMessage(message);
         response.setData(data);

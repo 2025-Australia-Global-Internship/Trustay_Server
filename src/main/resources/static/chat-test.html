@@ -42,7 +42,7 @@
             return;
         }
 
-        var socket = new SockJS('/ws-stomp');
+        var socket = new SockJS('http://trustay.mirim-it-show.site:8080/ws-stomp');
         stompClient = Stomp.over(socket);
 
         stompClient.connect({}, function (frame) {

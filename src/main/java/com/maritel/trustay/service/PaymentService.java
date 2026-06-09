@@ -25,6 +25,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -212,6 +215,19 @@ public class PaymentService {
                         .targetAccount(p.getTargetAccount())
                         .dutchPayGroupId(p.getDutchPayGroup() != null ? p.getDutchPayGroup().getId() : null)
                         .build())
+                .toList();
+    }
+
+    public List<PaymentHistoryRes> getMyPaymentHistory(String memberEmail, LocalDate from, LocalDate to, PaymentType type) {
+        Member member = memberRepository.findByEmail(memberEmail)
+                .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다."));
+
+        LocalDateTime fromDateTime = from != null ? from.atStartOfDay() : null;
+        LocalDateTime toDateTime = to != null ? to.atTime(LocalTime.MAX) : null;
+
+        return paymentRepository.findHistory(member.getId(), fromDateTime, toDateTime, type)
+                .stream()
+                .map(PaymentHistoryRes::from)
                 .toList();
     }
 

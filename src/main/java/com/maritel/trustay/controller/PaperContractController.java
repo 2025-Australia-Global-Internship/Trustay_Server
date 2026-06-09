@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.security.Principal;
 import java.util.List;
 
 @RestController
@@ -49,6 +50,13 @@ public class PaperContractController {
             @RequestParam Long memberId
     ) {
         PaperContractDocumentRes res = paperContractService.getDocument(documentId, memberId);
+        return ResponseEntity.ok(DataResponse.of(ResponseCode.SUCCESS, res));
+    }
+
+    @Operation(summary = "내 계약서 문서 목록 조회")
+    @GetMapping("/me")
+    public ResponseEntity<DataResponse<List<PaperContractDocumentRes>>> getMyDocuments(Principal principal) {
+        List<PaperContractDocumentRes> res = paperContractService.getMyDocuments(principal.getName());
         return ResponseEntity.ok(DataResponse.of(ResponseCode.SUCCESS, res));
     }
 }

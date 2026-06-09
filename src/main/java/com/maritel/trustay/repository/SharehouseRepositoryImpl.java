@@ -34,7 +34,7 @@ public class SharehouseRepositoryImpl implements SharehouseRepositoryCustom {
         List<Sharehouse> content = queryFactory
                 .selectFrom(sharehouse)
                 .where(
-                        isApproved(),
+                approvalStatus(req.getStatus()),
                         containsKeyword(req.getKeyword()),
                         eqHouseType(req.getHouseType()),
                         goeMinPrice(req.getMinPrice()),
@@ -55,7 +55,7 @@ public class SharehouseRepositoryImpl implements SharehouseRepositoryCustom {
                 .select(sharehouse.count())
                 .from(sharehouse)
                 .where(
-                        isApproved(),
+                approvalStatus(req.getStatus()),
                         containsKeyword(req.getKeyword()),
                         eqHouseType(req.getHouseType()),
                         goeMinPrice(req.getMinPrice()),
@@ -71,8 +71,8 @@ public class SharehouseRepositoryImpl implements SharehouseRepositoryCustom {
         return new PageImpl<>(content, pageable, total != null ? total : 0L);
     }
 
-    private BooleanExpression isApproved() {
-        return sharehouse.approvalStatus.eq(ApprovalStatus.ACTIVE);
+    private BooleanExpression approvalStatus(ApprovalStatus status) {
+        return status != null ? sharehouse.approvalStatus.eq(status) : sharehouse.approvalStatus.eq(ApprovalStatus.ACTIVE);
     }
 
     private BooleanExpression containsKeyword(String keyword) {

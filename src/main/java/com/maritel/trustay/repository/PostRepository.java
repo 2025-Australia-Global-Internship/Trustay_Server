@@ -33,4 +33,6 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     // 작성자의 게시글 목록
     List<Post> findByAuthorId(Long authorId);
+
+    Page<Post> findByAuthorId(Long authorId, Pageable pageable);
 }

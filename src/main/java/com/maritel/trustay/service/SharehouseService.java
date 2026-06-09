@@ -1,6 +1,7 @@
 package com.maritel.trustay.service;
 
 import com.maritel.trustay.constant.ApprovalStatus;
+import com.maritel.trustay.constant.ContractStatus;
 import com.maritel.trustay.constant.Role;
 import com.maritel.trustay.dto.req.SharehouseReq;
 import com.maritel.trustay.dto.req.SharehouseSearchReq;
@@ -8,11 +9,13 @@ import com.maritel.trustay.dto.req.SharehouseUpdateReq;
 import com.maritel.trustay.dto.res.SharehouseRes;
 import com.maritel.trustay.dto.res.SharehouseResultRes;
 import com.maritel.trustay.dto.res.WishToggleRes;
+import com.maritel.trustay.entity.Contract;
 import com.maritel.trustay.entity.Image;
 import com.maritel.trustay.entity.Member;
 import com.maritel.trustay.entity.Sharehouse;
 import com.maritel.trustay.entity.SharehouseImage;
 import com.maritel.trustay.entity.SharehouseWish;
+import com.maritel.trustay.repository.ContractRepository;
 import com.maritel.trustay.repository.ImageRepository;
 import com.maritel.trustay.repository.MemberRepository;
 import com.maritel.trustay.repository.SharehouseImageRepository;
@@ -39,6 +42,7 @@ public class SharehouseService {
 
     private final SharehouseRepository sharehouseRepository;
     private final MemberRepository memberRepository;
+    private final ContractRepository contractRepository;
     private final GeocodingService geocodingService; // 1. 주입 추가
     private final ImageRepository imageRepository;
     private final SharehouseImageRepository sharehouseImageRepository;
@@ -278,6 +282,25 @@ public class SharehouseService {
             List<SharehouseImage> images = sharehouseImageRepository.findBySharehouseId(sh.getId());
             return SharehouseRes.from(sh, images, true);
         });
+    }
+
+    @Transactional(readOnly = true)
+    public SharehouseRes getMyCurrentSharehouse(String userEmail) {
+        Member member = memberRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new IllegalArgumentException("사용자 정보를 찾을 수 없습니다."));
+
+        List<Contract> contracts = contractRepository.findByTenantEmailAndStatusOrderByRegTimeDesc(
+                member.getEmail(),
+                ContractStatus.ACTIVE
+        );
+
+        Contract currentContract = contracts.stream()
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("현재 거주 중인 매물이 없습니다."));
+
+        Sharehouse sharehouse = currentContract.getSharehouse();
+        List<SharehouseImage> images = sharehouseImageRepository.findBySharehouseId(sharehouse.getId());
+        return SharehouseRes.from(sharehouse, images);
     }
 
     private boolean isAdmin(Member member) {

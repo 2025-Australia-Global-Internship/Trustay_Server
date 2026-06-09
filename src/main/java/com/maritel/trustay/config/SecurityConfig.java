@@ -89,6 +89,9 @@ public class SecurityConfig {
                 "/images/**",
                 "/static/**",
                 "/favicon.ico",
+                "/chat-test.html",
+                "/ws-stomp",
+                "/ws-stomp/**",
                 "/ws-stomp/**",
                 "/chat-test.html"
         );

@@ -185,6 +185,23 @@ public class PostService {
     }
 
     /**
+     * 내가 작성한 게시글 목록
+     */
+    public Page<PostRes> getMyPosts(String userEmail, Pageable pageable) {
+        Member member = memberRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new IllegalArgumentException("회원 정보를 찾을 수 없습니다."));
+
+        Page<Post> posts = postRepository.findByAuthorId(member.getId(), pageable);
+        return posts.map(post -> {
+            List<String> imageUrls = postImageRepository.findByPostIdOrderByDisplayOrderAsc(post.getId())
+                    .stream()
+                    .map(postImage -> postImage.getImage().getImageUrl())
+                    .collect(Collectors.toList());
+            return PostRes.from(post, imageUrls);
+        });
+    }
+
+    /**
      * 게시글 수정
      */
     @Transactional
