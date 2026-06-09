@@ -76,4 +76,11 @@ public class Profile {
     public void addRole(Role role) {
         this.roles.add(role);
     }
+
+    public void updateGender(String gender) {
+        this.gender = gender;
+    }
+    public void updateAddress(String address) {
+        this.address = address;
+    }
 }

@@ -92,9 +92,17 @@ public class MemberService {
             profileRepository.save(profile);
         }
 
-        // 전화번호, 생일 수정
+        // 전화번호, 생일 수정 (둘 다 null 이 아닐 때만 한 번에 갱신)
         if (dto.getPhone() != null || dto.getBirth() != null) {
             profile.updateProfile(dto.getPhone(), dto.getBirth());
+        }
+        // 성별 수정
+        if (dto.getGender() != null) {
+            profile.updateGender(dto.getGender());
+        }
+        // 주소(지역) 수정
+        if (dto.getAddress() != null) {
+            profile.updateAddress(dto.getAddress());
         }
 
         // 계좌 정보 수정

@@ -17,6 +17,8 @@ public class ProfileRes {
     private Long memberId;
     private String email;
     private String name;
+    private String gender;
+    private String address;
 
     // Profile 정보
     private String birth;
@@ -34,6 +36,8 @@ public class ProfileRes {
                 .name(member.getName())
                 .birth(profile != null ? profile.getBirth() : null)
                 .phone(profile != null ? profile.getPhone() : null)
+                .gender(profile != null ? profile.getGender() : null)
+                .address(profile != null ? profile.getAddress() : null)
                 .roles(profile != null ? profile.getRoles() : null)
                 .accountInfo(profile != null ? profile.getAccountInfo() : null)
                 .profileImageUrl(profile != null && profile.getProfileImage() != null
