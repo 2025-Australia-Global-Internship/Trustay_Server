@@ -1,6 +1,7 @@
 package com.maritel.trustay.service;
 
 import com.maritel.trustay.constant.MessageType;
+import com.maritel.trustay.constant.NotificationType;
 import com.maritel.trustay.dto.req.ChatMessageReq;
 import com.maritel.trustay.dto.res.ChatMessageRes;
 import com.maritel.trustay.entity.ChatMessage;
@@ -25,6 +26,7 @@ public class ChatMessageService {
     private final ChatMessageRepository chatMessageRepository;
     private final ChatRoomRepository chatRoomRepository;
     private final MemberRepository memberRepository;
+    private final NotificationService notificationService;
 
     // 메시지 저장 (보내기)
     public ChatMessageRes saveMessage(ChatMessageReq req) {
@@ -42,6 +44,22 @@ public class ChatMessageService {
                 .build();
 
         chatMessageRepository.save(chatMessage);
+
+        // 채팅방의 상대방에게 알림 (자기 자신은 제외)
+        Member counterparty = room.getSender().getId().equals(sender.getId())
+                ? room.getReceiver() : room.getSender();
+        String preview = req.getMessage() != null && req.getMessage().length() > 50
+                ? req.getMessage().substring(0, 50) + "…"
+                : req.getMessage();
+        notificationService.notifyExcludingSender(
+                counterparty,
+                sender.getId(),
+                NotificationType.CHAT,
+                sender.getName() + "님의 새 메시지",
+                preview,
+                "/chat/room/" + room.getId()
+        );
+
         return ChatMessageRes.of(chatMessage);
     }
 

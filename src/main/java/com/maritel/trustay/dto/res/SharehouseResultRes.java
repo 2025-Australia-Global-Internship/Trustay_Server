@@ -38,9 +38,16 @@ public class SharehouseResultRes {
     private String age;
     private String religion;
     private String dietaryPreference;
+    private Double averageRating; // 평균 평점 (0 ~ 5)
+    private Long reviewCount;     // 리뷰 수
 
-    // Entity -> DTO 변환 메서드
+    // Entity -> DTO 변환 메서드 (평점 정보 없을 때 호환용)
     public static SharehouseResultRes from(Sharehouse sharehouse, List<SharehouseImage> images) {
+        return from(sharehouse, images, 0.0, 0L);
+    }
+
+    public static SharehouseResultRes from(Sharehouse sharehouse, List<SharehouseImage> images,
+                                           Double averageRating, Long reviewCount) {
         return SharehouseResultRes.builder()
                 .id(sharehouse.getId())
                 .title(sharehouse.getTitle())
@@ -69,6 +76,8 @@ public class SharehouseResultRes {
                 .age(sharehouse.getAge())
                 .religion(sharehouse.getReligion())
                 .dietaryPreference(sharehouse.getDietaryPreference())
+                .averageRating(averageRating != null ? averageRating : 0.0)
+                .reviewCount(reviewCount != null ? reviewCount : 0L)
                 .build();
     }
 

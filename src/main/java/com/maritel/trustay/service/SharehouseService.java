@@ -2,6 +2,7 @@ package com.maritel.trustay.service;
 
 import com.maritel.trustay.constant.ApprovalStatus;
 import com.maritel.trustay.constant.ContractStatus;
+import com.maritel.trustay.constant.NotificationType;
 import com.maritel.trustay.constant.Role;
 import com.maritel.trustay.dto.req.SharehouseReq;
 import com.maritel.trustay.dto.req.SharehouseSearchReq;
@@ -18,6 +19,7 @@ import com.maritel.trustay.entity.SharehouseWish;
 import com.maritel.trustay.repository.ContractRepository;
 import com.maritel.trustay.repository.ImageRepository;
 import com.maritel.trustay.repository.MemberRepository;
+import com.maritel.trustay.repository.ReviewRepository;
 import com.maritel.trustay.repository.SharehouseImageRepository;
 import com.maritel.trustay.repository.SharehouseRepository;
 import com.maritel.trustay.repository.SharehouseWishRepository;
@@ -29,6 +31,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PathVariable;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -47,6 +50,8 @@ public class SharehouseService {
     private final ImageRepository imageRepository;
     private final SharehouseImageRepository sharehouseImageRepository;
     private final SharehouseWishRepository sharehouseWishRepository;
+    private final NotificationService notificationService;
+    private final ReviewRepository reviewRepository;
 
 
     /**
@@ -58,7 +63,9 @@ public class SharehouseService {
 
         // [수정] 이미지 리스트 조회 후 함께 전달
         List<SharehouseImage> images = sharehouseImageRepository.findBySharehouseId(houseId);
-        return SharehouseResultRes.from(sharehouse, images);
+        double avg = round2(reviewRepository.findAverageRatingByHouseId(houseId));
+        long cnt = reviewRepository.countByTargetHouse_Id(houseId);
+        return SharehouseResultRes.from(sharehouse, images, avg, cnt);
     }
 
     /**
@@ -67,11 +74,30 @@ public class SharehouseService {
     public Page<SharehouseRes> getMySharehouseList(String email, Pageable pageable) {
         Page<Sharehouse> sharehouses = sharehouseRepository.findByHostEmail(email, pageable);
 
-        // [수정] 각 항목마다 이미지를 조회하여 from 메서드에 전달
+        Map<Long, double[]> ratingMap = aggregateRatings(sharehouses.map(Sharehouse::getId).toList());
         return sharehouses.map(sharehouse -> {
             List<SharehouseImage> images = sharehouseImageRepository.findBySharehouseId(sharehouse.getId());
-            return SharehouseRes.from(sharehouse, images);
+            double[] r = ratingMap.getOrDefault(sharehouse.getId(), new double[]{0.0, 0.0});
+            return SharehouseRes.from(sharehouse, images, false, r[0], (long) r[1]);
         });
+    }
+
+    /** Review 평점 집계 (houseId → [avgRating, reviewCount]) */
+    private Map<Long, double[]> aggregateRatings(List<Long> houseIds) {
+        if (houseIds == null || houseIds.isEmpty()) return Map.of();
+        List<Object[]> rows = reviewRepository.aggregateByHouseIds(houseIds);
+        Map<Long, double[]> result = new HashMap<>();
+        for (Object[] row : rows) {
+            Long id = ((Number) row[0]).longValue();
+            double avg = row[1] != null ? round2(((Number) row[1]).doubleValue()) : 0.0;
+            double cnt = row[2] != null ? ((Number) row[2]).doubleValue() : 0.0;
+            result.put(id, new double[]{avg, cnt});
+        }
+        return result;
+    }
+
+    private static double round2(double v) {
+        return Math.round(v * 100.0) / 100.0;
     }
 
 
@@ -206,6 +232,21 @@ public class SharehouseService {
                 .orElseThrow(() -> new IllegalArgumentException("해당 쉐어하우스가 존재하지 않습니다."));
 
         sharehouse.changeApprovalStatus(status);
+
+        // 4. 집주인(host)에게 승인/거절 알림 발행
+        String title = status == ApprovalStatus.ACTIVE
+                ? "매물이 승인되었습니다."
+                : status == ApprovalStatus.REJECTED
+                    ? "매물이 거절되었습니다."
+                    : "매물 상태가 변경되었습니다.";
+        notificationService.notify(
+                sharehouse.getHost(),
+                NotificationType.APPROVAL,
+                title,
+                String.format("[%s] 매물의 상태가 %s(으)로 변경되었습니다.",
+                        sharehouse.getTitle(), status.name()),
+                "/sharehouse/" + sharehouse.getId()
+        );
     }
 
     /**
@@ -222,9 +263,9 @@ public class SharehouseService {
 
         // [추가] 해당 쉐어하우스의 이미지 리스트 조회
         List<SharehouseImage> images = sharehouseImageRepository.findBySharehouseId(houseId);
-
-        // [수정] sharehouse와 images를 함께 전달
-        return SharehouseResultRes.from(sharehouse, images);
+        double avg = round2(reviewRepository.findAverageRatingByHouseId(houseId));
+        long cnt = reviewRepository.countByTargetHouse_Id(houseId);
+        return SharehouseResultRes.from(sharehouse, images, avg, cnt);
     }
 
     /**
@@ -233,12 +274,11 @@ public class SharehouseService {
     public Page<SharehouseRes> getSharehouseList(SharehouseSearchReq req, Pageable pageable) {
         Page<Sharehouse> sharehousePage = sharehouseRepository.searchSharehouses(req, pageable);
 
+        Map<Long, double[]> ratingMap = aggregateRatings(sharehousePage.map(Sharehouse::getId).toList());
         return sharehousePage.map(sharehouse -> {
-            // [추가] 각 쉐어하우스의 이미지 리스트 조회
             List<SharehouseImage> images = sharehouseImageRepository.findBySharehouseId(sharehouse.getId());
-
-            // [수정] 파라미터 2개 전달
-            return SharehouseRes.from(sharehouse, images);
+            double[] r = ratingMap.getOrDefault(sharehouse.getId(), new double[]{0.0, 0.0});
+            return SharehouseRes.from(sharehouse, images, false, r[0], (long) r[1]);
         });
     }
 
@@ -277,10 +317,13 @@ public class SharehouseService {
         Member member = memberRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new IllegalArgumentException("사용자 정보를 찾을 수 없습니다."));
         Page<SharehouseWish> wishes = sharehouseWishRepository.findByMember_IdOrderByRegTimeDesc(member.getId(), pageable);
+        Map<Long, double[]> ratingMap = aggregateRatings(
+                wishes.map(w -> w.getSharehouse().getId()).toList());
         return wishes.map(w -> {
             Sharehouse sh = w.getSharehouse();
             List<SharehouseImage> images = sharehouseImageRepository.findBySharehouseId(sh.getId());
-            return SharehouseRes.from(sh, images, true);
+            double[] r = ratingMap.getOrDefault(sh.getId(), new double[]{0.0, 0.0});
+            return SharehouseRes.from(sh, images, true, r[0], (long) r[1]);
         });
     }
 
@@ -300,7 +343,9 @@ public class SharehouseService {
 
         Sharehouse sharehouse = currentContract.getSharehouse();
         List<SharehouseImage> images = sharehouseImageRepository.findBySharehouseId(sharehouse.getId());
-        return SharehouseRes.from(sharehouse, images);
+        double avg = round2(reviewRepository.findAverageRatingByHouseId(sharehouse.getId()));
+        long cnt = reviewRepository.countByTargetHouse_Id(sharehouse.getId());
+        return SharehouseRes.from(sharehouse, images, false, avg, cnt);
     }
 
     private boolean isAdmin(Member member) {

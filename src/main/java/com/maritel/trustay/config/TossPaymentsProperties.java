@@ -14,10 +14,10 @@ public class TossPaymentsProperties {
     /**
      * 토스페이먼츠 시크릿 키 (테스트: test_sk_...). 서버에서만 사용합니다.
      */
-    private String secretKey = "";
+    private String secretKey = "test_sk_QbgMGZzorzDL6EEDLE2K3l5E1em4";
 
     /**
      * 결제위젯 연동용 클라이언트 키 (테스트: test_ck_...). 프론트에 내려줘도 됩니다.
      */
-    private String clientKey = "";
+    private String clientKey = "test_ck_DpexMgkW36Za5ezYwKmN3GbR5ozO";
 }

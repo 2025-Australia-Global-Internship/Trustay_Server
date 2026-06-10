@@ -110,4 +110,30 @@ public class PostController {
         postService.deletePost(userEmail, postId);
         return ResponseEntity.ok(DataResponse.of(ResponseCode.SUCCESS));
     }
+
+    // =========================================================================
+    // TODO: [신규 기능] 게시글 좋아요 토글 — DB 테이블 신규 필요
+    //   - PostLike 테이블 신규 (id, post_id FK, member_id FK, reg_time, UNIQUE(post_id, member_id))
+    //   - Repository: PostLikeRepository.existsByPostIdAndMemberId, deleteByPostIdAndMemberId
+    //   - Service: toggleLike(email, postId) → 있으면 삭제, 없으면 생성 + post.likeCount 증감
+    //   - API: POST /api/trustay/posts/{postId}/like
+    //          Response: { liked: boolean, likeCount: int }
+    //   - PostRes.likeCount 필드는 이미 존재 → 토글 API만 추가하면 됨
+    // =========================================================================
+
+    // =========================================================================
+    // TODO: [신규 도메인] 게시글 댓글 시스템 — DB 테이블 신규 필요
+    //   - Comment 테이블 신규 (id, post_id FK, author_id FK->Member,
+    //                         parent_id FK->Comment(self, 대댓글),
+    //                         content, reg_time, mod_time, is_deleted)
+    //   - Repository: CommentRepository
+    //   - Service: CommentService (작성/수정/삭제/조회)
+    //   - DTO: CommentReq, CommentUpdateReq, CommentRes
+    //   - API:
+    //     POST   /api/trustay/posts/{postId}/comments         댓글 작성
+    //     GET    /api/trustay/posts/{postId}/comments         목록 (pageable)
+    //     PUT    /api/trustay/posts/{postId}/comments/{id}    수정
+    //     DELETE /api/trustay/posts/{postId}/comments/{id}    삭제
+    //   - PostRes에 commentCount 추가 검토
+    // =========================================================================
 }

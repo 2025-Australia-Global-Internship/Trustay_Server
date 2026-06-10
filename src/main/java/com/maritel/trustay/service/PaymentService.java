@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.maritel.trustay.client.TossPaymentsApiException;
 import com.maritel.trustay.client.TossPaymentsClient;
 import com.maritel.trustay.config.TossPaymentsProperties;
+import com.maritel.trustay.constant.NotificationType;
 import com.maritel.trustay.constant.PaymentStatus;
 import com.maritel.trustay.constant.PaymentType;
 import com.maritel.trustay.dto.req.DutchPayCreateReq;
@@ -49,6 +50,7 @@ public class PaymentService {
     private final PaymentRepository paymentRepository;
     private final TossPaymentsClient tossPaymentsClient;
     private final TossPaymentsProperties tossPaymentsProperties;
+    private final NotificationService notificationService;
 
     public TossClientConfigRes getTossClientConfig() {
         if (!StringUtils.hasText(tossPaymentsProperties.getClientKey())) {
@@ -189,6 +191,9 @@ public class PaymentService {
             String tossStatus = tossBody != null && tossBody.has("status")
                     ? tossBody.get("status").asText()
                     : null;
+
+            publishPaymentConfirmedNotifications(payment);
+
             return PaymentConfirmRes.builder()
                     .paymentId(payment.getId())
                     .orderId(payment.getOrderId())
@@ -199,6 +204,41 @@ public class PaymentService {
         } catch (TossPaymentsApiException e) {
             // 승인 실패 시 트랜잭션 롤백 → 결제 건은 PENDING 유지(재시도 가능)
             throw e;
+        }
+    }
+
+    /**
+     * 결제 완료 시 송금자와 수취인 모두에게 알림 발행.
+     * - RENT: 송금자=세입자, 수취인=집주인(Contract.landlord)
+     * - DUTCH: 송금자=납부자, 수취인=정산 담당자(DutchPayGroup.payee)
+     * - 그 외 타입: 송금자에게만 결제 완료 알림
+     */
+    private void publishPaymentConfirmedNotifications(Payment payment) {
+        Member payer = payment.getMember();
+        String amountText = String.format("%,d원", payment.getAmount());
+
+        notificationService.notify(
+                payer,
+                NotificationType.PAYMENT,
+                "결제가 완료되었습니다.",
+                String.format("%s 결제 %s이(가) 정상 승인되었습니다.", payment.getType().name(), amountText),
+                "/payments/" + payment.getId()
+        );
+
+        Member payee = null;
+        if (payment.getType() == PaymentType.RENT && payment.getContract() != null) {
+            payee = payment.getContract().getLandlord();
+        } else if (payment.getType() == PaymentType.DUTCH && payment.getDutchPayGroup() != null) {
+            payee = payment.getDutchPayGroup().getPayee();
+        }
+        if (payee != null && !payee.getId().equals(payer.getId())) {
+            notificationService.notify(
+                    payee,
+                    NotificationType.PAYMENT,
+                    "입금 확인 알림",
+                    String.format("%s님이 %s을(를) 결제했습니다.", payer.getName(), amountText),
+                    "/payments/" + payment.getId()
+            );
         }
     }
 

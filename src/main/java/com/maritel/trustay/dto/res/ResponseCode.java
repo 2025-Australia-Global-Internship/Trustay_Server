@@ -61,6 +61,15 @@ public enum ResponseCode {
 
     NOT_CONTRACT_TENANT(4032, "해당 계약의 세입자만 이 결제를 진행할 수 있습니다."),
 
+    /* Review */
+    REVIEW_NOT_ELIGIBLE(4033, "해당 매물의 거주 이력(계약)이 있는 사용자만 리뷰를 작성할 수 있습니다."),
+    REVIEW_ALREADY_EXISTS(4034, "이미 해당 매물에 리뷰를 작성하였습니다."),
+    REVIEW_FORBIDDEN(4035, "본인이 작성한 리뷰만 수정/삭제할 수 있습니다."),
+
+    /* Notification */
+    NOT_FOUND_NOTIFICATION(4045, "알림을 찾을 수 없습니다."),
+    NOTIFICATION_FORBIDDEN(4036, "본인의 알림만 처리할 수 있습니다."),
+
     TOSS_PAYMENT_FAILED(5001, "토스 결제 승인에 실패했습니다."),
     ;
 

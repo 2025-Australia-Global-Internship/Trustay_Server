@@ -26,13 +26,22 @@ public class SharehouseRes {
     private ApprovalStatus approvalStatus;
     private List<String> imageUrls;
     private Boolean wishedByMe; // 현재 로그인 사용자 찜 여부 (선택)
+    private Double lat;
+    private Double lon;
+    private Double averageRating; // 평균 평점 (0 ~ 5)
+    private Long reviewCount;     // 리뷰 수
 
     // [수정] 메서드 시그니처에 List<SharehouseImage> images 추가
     public static SharehouseRes from(Sharehouse sharehouse, List<SharehouseImage> images) {
-        return from(sharehouse, images, false);
+        return from(sharehouse, images, false, 0.0, 0L);
     }
 
     public static SharehouseRes from(Sharehouse sharehouse, List<SharehouseImage> images, boolean wishedByMe) {
+        return from(sharehouse, images, wishedByMe, 0.0, 0L);
+    }
+
+    public static SharehouseRes from(Sharehouse sharehouse, List<SharehouseImage> images,
+                                     boolean wishedByMe, Double averageRating, Long reviewCount) {
         return SharehouseRes.builder()
                 .id(sharehouse.getId())
                 .title(sharehouse.getTitle())
@@ -46,10 +55,14 @@ public class SharehouseRes {
                 .wishedByMe(wishedByMe)
                 .houseType(sharehouse.getHouseType())
                 .approvalStatus(sharehouse.getApprovalStatus())
+                .lat(sharehouse.getLatitude())
+                .lon(sharehouse.getLongitude())
                 // [수정] images 리스트를 스트림으로 변환하여 URL 추출
                 .imageUrls(images != null ? images.stream()
                         .map(si -> si.getImage().getImageUrl())
                         .collect(Collectors.toList()) : List.of())
+                .averageRating(averageRating != null ? averageRating : 0.0)
+                .reviewCount(reviewCount != null ? reviewCount : 0L)
                 .build();
     }
 }
