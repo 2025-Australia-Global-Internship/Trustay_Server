@@ -2,6 +2,7 @@ package com.maritel.trustay.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.maritel.trustay.dto.req.ChatRoomCreateReq;
+import com.maritel.trustay.dto.res.ChatRoomCreateRes;
 import com.maritel.trustay.dto.res.ChatRoomListRes;
 import com.maritel.trustay.service.ChatMessageService;
 import com.maritel.trustay.service.ChatRoomService;
@@ -43,18 +44,20 @@ class ChatRoomControllerTest {
     com.maritel.trustay.config.CustomUserDetailsService customUserDetailsService;
 
     @Test
-    @DisplayName("POST /api/chat/room - 채팅방 생성")
+    @DisplayName("POST /api/chat/room - 채팅방 생성 (응답에 roomId + houseId 포함)")
     void createRoom_success() throws Exception {
         ChatRoomCreateReq req = new ChatRoomCreateReq();
         req.setHouseId(1L);
         req.setSenderId(2L);
-        when(chatRoomService.createOrGetRoom(any())).thenReturn(1L);
+        when(chatRoomService.createOrGetRoom(any()))
+                .thenReturn(ChatRoomCreateRes.builder().roomId(1L).houseId(1L).build());
 
         mockMvc.perform(post("/api/chat/room")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data").value(1));
+                .andExpect(jsonPath("$.data.roomId").value(1))
+                .andExpect(jsonPath("$.data.houseId").value(1));
     }
 
     @Test

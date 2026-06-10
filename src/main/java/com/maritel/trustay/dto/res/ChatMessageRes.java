@@ -11,6 +11,10 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class ChatMessageRes {
     private Long messageId;
+    /** 메시지가 속한 채팅방 ID (웹소켓 재연결 시 라우팅용) */
+    private Long roomId;
+    /** 메시지가 속한 채팅방의 매물 ID (어떤 하우스에 대한 채팅인지 식별용) */
+    private Long houseId;
     private Long senderId;
     private String senderName; // 화면에 표시할 이름
     private String message;
@@ -23,8 +27,16 @@ public class ChatMessageRes {
         Long docId = entity.getPaperContractDocument() != null
                 ? entity.getPaperContractDocument().getId()
                 : null;
+
+        Long roomId = entity.getChatRoom() != null ? entity.getChatRoom().getId() : null;
+        Long houseId = (entity.getChatRoom() != null && entity.getChatRoom().getSharehouse() != null)
+                ? entity.getChatRoom().getSharehouse().getId()
+                : null;
+
         return ChatMessageRes.builder()
                 .messageId(entity.getId())
+                .roomId(roomId)
+                .houseId(houseId)
                 .senderId(entity.getSender().getId())
                 .senderName(entity.getSender().getName())
                 .message(entity.getMessage())

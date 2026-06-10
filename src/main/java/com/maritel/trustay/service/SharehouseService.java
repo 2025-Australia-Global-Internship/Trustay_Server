@@ -7,6 +7,7 @@ import com.maritel.trustay.constant.Role;
 import com.maritel.trustay.dto.req.SharehouseReq;
 import com.maritel.trustay.dto.req.SharehouseSearchReq;
 import com.maritel.trustay.dto.req.SharehouseUpdateReq;
+import com.maritel.trustay.dto.res.RecentSearchRes;
 import com.maritel.trustay.dto.res.SharehouseRes;
 import com.maritel.trustay.dto.res.SharehouseResultRes;
 import com.maritel.trustay.dto.res.WishToggleRes;
@@ -15,17 +16,22 @@ import com.maritel.trustay.entity.Image;
 import com.maritel.trustay.entity.Member;
 import com.maritel.trustay.entity.Sharehouse;
 import com.maritel.trustay.entity.SharehouseImage;
+import com.maritel.trustay.entity.SharehouseRecentSearch;
+import com.maritel.trustay.entity.SharehouseRecentView;
 import com.maritel.trustay.entity.SharehouseWish;
 import com.maritel.trustay.repository.ContractRepository;
 import com.maritel.trustay.repository.ImageRepository;
 import com.maritel.trustay.repository.MemberRepository;
 import com.maritel.trustay.repository.ReviewRepository;
 import com.maritel.trustay.repository.SharehouseImageRepository;
+import com.maritel.trustay.repository.SharehouseRecentSearchRepository;
+import com.maritel.trustay.repository.SharehouseRecentViewRepository;
 import com.maritel.trustay.repository.SharehouseRepository;
 import com.maritel.trustay.repository.SharehouseWishRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,6 +56,8 @@ public class SharehouseService {
     private final ImageRepository imageRepository;
     private final SharehouseImageRepository sharehouseImageRepository;
     private final SharehouseWishRepository sharehouseWishRepository;
+    private final SharehouseRecentViewRepository sharehouseRecentViewRepository;
+    private final SharehouseRecentSearchRepository sharehouseRecentSearchRepository;
     private final NotificationService notificationService;
     private final ReviewRepository reviewRepository;
 
@@ -252,14 +260,20 @@ public class SharehouseService {
     /**
      * [수정] 쉐어하우스 상세 조회
      * - 조회 시 viewCount 증가
+     * - 로그인 사용자인 경우 "최근 본 하우스" 기록도 갱신
      * - 상세 정보인 SharehouseResultRes 반환
      */
     @Transactional
-    public SharehouseResultRes getSharehouseDetail(Long houseId) {
+    public SharehouseResultRes getSharehouseDetail(Long houseId, String viewerEmail) {
         sharehouseRepository.updateViewCount(houseId);
 
         Sharehouse sharehouse = sharehouseRepository.findById(houseId)
                 .orElseThrow(() -> new IllegalArgumentException("Sharehouse not found."));
+
+        // 로그인 사용자라면 최근 본 하우스 기록 갱신
+        if (viewerEmail != null) {
+            recordRecentView(viewerEmail, sharehouse);
+        }
 
         // [추가] 해당 쉐어하우스의 이미지 리스트 조회
         List<SharehouseImage> images = sharehouseImageRepository.findBySharehouseId(houseId);
@@ -268,10 +282,86 @@ public class SharehouseService {
         return SharehouseResultRes.from(sharehouse, images, avg, cnt);
     }
 
+    /** 비로그인 호출 호환을 위한 오버로드 */
+    @Transactional
+    public SharehouseResultRes getSharehouseDetail(Long houseId) {
+        return getSharehouseDetail(houseId, null);
+    }
+
+    /**
+     * (member, sharehouse) 쌍에 대한 최근 본 기록을 upsert.
+     * - 기존 기록이 있으면 viewedAt 만 갱신.
+     * - 없으면 새로 저장.
+     */
+    private void recordRecentView(String email, Sharehouse sharehouse) {
+        Member member = memberRepository.findByEmail(email).orElse(null);
+        if (member == null) {
+            return;
+        }
+
+        sharehouseRecentViewRepository
+                .findByMember_IdAndSharehouse_Id(member.getId(), sharehouse.getId())
+                .ifPresentOrElse(
+                        SharehouseRecentView::touch,
+                        () -> sharehouseRecentViewRepository.save(
+                                SharehouseRecentView.builder()
+                                        .member(member)
+                                        .sharehouse(sharehouse)
+                                        .build()
+                        )
+                );
+    }
+
+    /** 최근 본 하우스 목록에서 노출할 기본 개수 */
+    private static final int RECENT_VIEW_LIMIT = 5;
+
+    /**
+     * 내가 최근에 본 쉐어하우스 목록 조회 (5개 고정).
+     * 찜한 하우스 목록 API 와 동일하게 SharehouseRes 리스트를 반환한다.
+     */
+    @Transactional(readOnly = true)
+    public List<SharehouseRes> getMyRecentSharehouses(String userEmail) {
+        Member member = memberRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new IllegalArgumentException("User not found."));
+
+        List<SharehouseRecentView> views = sharehouseRecentViewRepository
+                .findByMember_IdOrderByViewedAtDesc(member.getId(), PageRequest.of(0, RECENT_VIEW_LIMIT));
+
+        if (views.isEmpty()) {
+            return List.of();
+        }
+
+        List<Long> houseIds = views.stream().map(v -> v.getSharehouse().getId()).toList();
+        Map<Long, double[]> ratingMap = aggregateRatings(houseIds);
+
+        // 찜 여부 표시를 위해 한번에 조회
+        Set<Long> wishedHouseIds = new java.util.HashSet<>();
+        for (Long hid : houseIds) {
+            if (sharehouseWishRepository.existsByMember_IdAndSharehouse_Id(member.getId(), hid)) {
+                wishedHouseIds.add(hid);
+            }
+        }
+
+        return views.stream()
+                .map(v -> {
+                    Sharehouse sh = v.getSharehouse();
+                    List<SharehouseImage> images = sharehouseImageRepository.findBySharehouseId(sh.getId());
+                    double[] r = ratingMap.getOrDefault(sh.getId(), new double[]{0.0, 0.0});
+                    return SharehouseRes.from(sh, images, wishedHouseIds.contains(sh.getId()), r[0], (long) r[1]);
+                })
+                .toList();
+    }
+
     /**
      * [수정] 쉐어하우스 목록 조회 (검색 + 페이징 + 정렬)
+     * - 로그인 사용자가 keyword 로 검색하면 "최근 검색어"에도 자동 기록.
      */
-    public Page<SharehouseRes> getSharehouseList(SharehouseSearchReq req, Pageable pageable) {
+    @Transactional
+    public Page<SharehouseRes> getSharehouseList(SharehouseSearchReq req, Pageable pageable, String viewerEmail) {
+        if (viewerEmail != null && req != null && req.getKeyword() != null && !req.getKeyword().isBlank()) {
+            recordRecentSearch(viewerEmail, req.getKeyword());
+        }
+
         Page<Sharehouse> sharehousePage = sharehouseRepository.searchSharehouses(req, pageable);
 
         Map<Long, double[]> ratingMap = aggregateRatings(sharehousePage.map(Sharehouse::getId).toList());
@@ -280,6 +370,11 @@ public class SharehouseService {
             double[] r = ratingMap.getOrDefault(sharehouse.getId(), new double[]{0.0, 0.0});
             return SharehouseRes.from(sharehouse, images, false, r[0], (long) r[1]);
         });
+    }
+
+    /** 비로그인 호출 호환을 위한 오버로드 */
+    public Page<SharehouseRes> getSharehouseList(SharehouseSearchReq req, Pageable pageable) {
+        return getSharehouseList(req, pageable, null);
     }
 
     /**
@@ -346,6 +441,82 @@ public class SharehouseService {
         double avg = round2(reviewRepository.findAverageRatingByHouseId(sharehouse.getId()));
         long cnt = reviewRepository.countByTargetHouse_Id(sharehouse.getId());
         return SharehouseRes.from(sharehouse, images, false, avg, cnt);
+    }
+
+    /** 최근 검색어 목록에 노출할 기본 개수 */
+    private static final int RECENT_SEARCH_LIMIT = 10;
+    /** 검색어 길이 상한 (DB 컬럼 길이와 동일) */
+    private static final int RECENT_SEARCH_KEYWORD_MAX = 100;
+
+    /**
+     * 최근 검색어 upsert.
+     * - 동일 keyword 가 있으면 searchedAt 만 갱신.
+     * - 빈 문자열/너무 긴 문자열은 무시.
+     */
+    private void recordRecentSearch(String email, String rawKeyword) {
+        if (rawKeyword == null) return;
+        String keyword = rawKeyword.trim();
+        if (keyword.isEmpty()) return;
+        if (keyword.length() > RECENT_SEARCH_KEYWORD_MAX) {
+            keyword = keyword.substring(0, RECENT_SEARCH_KEYWORD_MAX);
+        }
+
+        Member member = memberRepository.findByEmail(email).orElse(null);
+        if (member == null) return;
+
+        String finalKeyword = keyword;
+        sharehouseRecentSearchRepository
+                .findByMember_IdAndKeyword(member.getId(), finalKeyword)
+                .ifPresentOrElse(
+                        SharehouseRecentSearch::touch,
+                        () -> sharehouseRecentSearchRepository.save(
+                                SharehouseRecentSearch.builder()
+                                        .member(member)
+                                        .keyword(finalKeyword)
+                                        .build()
+                        )
+                );
+    }
+
+    /**
+     * 내가 최근에 검색한 키워드 목록 조회 (최대 10개, 최근 검색 순).
+     */
+    @Transactional(readOnly = true)
+    public List<RecentSearchRes> getMyRecentSearches(String userEmail) {
+        Member member = memberRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new IllegalArgumentException("User not found."));
+
+        return sharehouseRecentSearchRepository
+                .findByMember_IdOrderBySearchedAtDesc(member.getId(),
+                        org.springframework.data.domain.PageRequest.of(0, RECENT_SEARCH_LIMIT))
+                .stream()
+                .map(RecentSearchRes::from)
+                .toList();
+    }
+
+    /**
+     * 최근 검색어 1건 삭제 (본인 소유만).
+     */
+    @Transactional
+    public void deleteRecentSearch(String userEmail, Long searchId) {
+        Member member = memberRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new IllegalArgumentException("User not found."));
+
+        SharehouseRecentSearch entity = sharehouseRecentSearchRepository
+                .findByIdAndMember_Id(searchId, member.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Recent search not found."));
+
+        sharehouseRecentSearchRepository.delete(entity);
+    }
+
+    /**
+     * 내 최근 검색어 전체 삭제 ("Delete all").
+     */
+    @Transactional
+    public void deleteAllRecentSearches(String userEmail) {
+        Member member = memberRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new IllegalArgumentException("User not found."));
+        sharehouseRecentSearchRepository.deleteAllByMemberId(member.getId());
     }
 
     private boolean isAdmin(Member member) {

@@ -2,6 +2,7 @@ package com.maritel.trustay.controller;
 
 import com.maritel.trustay.dto.req.ChatRoomCreateReq;
 import com.maritel.trustay.dto.res.ChatMessageRes;
+import com.maritel.trustay.dto.res.ChatRoomCreateRes;
 import com.maritel.trustay.dto.res.ChatRoomListRes;
 import com.maritel.trustay.dto.res.DataResponse;
 import com.maritel.trustay.dto.res.ResponseCode;
@@ -21,10 +22,11 @@ public class ChatRoomController {
     private final ChatRoomService chatRoomService;
     private final ChatMessageService chatMessageService;
 
-    // 채팅방 생성
-    @Operation(summary = "Create a chat room.")
+    // 채팅방 생성 (응답에 roomId 와 houseId 를 함께 내려줌)
+    @Operation(summary = "Create a chat room.",
+            description = "Creates or returns an existing chat room. Response contains both roomId and houseId so the client doesn't need to look up the house separately.")
     @PostMapping("/room")
-    public DataResponse<Long> createRoom(@RequestBody ChatRoomCreateReq req) {
+    public DataResponse<ChatRoomCreateRes> createRoom(@RequestBody ChatRoomCreateReq req) {
         return DataResponse.of(chatRoomService.createOrGetRoom(req));
     }
 

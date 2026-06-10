@@ -135,10 +135,16 @@ public class SharehouseController {
         return ResponseEntity.ok(DataResponse.of(ResponseCode.SUCCESS, response));
     }
 
-    @Operation(summary = "Get sharehouse listing details.", description = "Returns the listing's details and increments the view count by one.")
+    @Operation(summary = "Get sharehouse listing details.", description = "Returns the listing's details and increments the view count by one. If the caller is authenticated, the listing is also added to their recently viewed history.")
     @GetMapping("/{houseId}")
-    public ResponseEntity<DataResponse<SharehouseResultRes>> getSharehouseDetail(@PathVariable Long houseId) {
-        SharehouseResultRes response = sharehouseService.getSharehouseDetail(houseId);
+    public ResponseEntity<DataResponse<SharehouseResultRes>> getSharehouseDetail(
+            @PathVariable Long houseId,
+            Principal principal) {
+        String email = (principal != null && principal.getName() != null
+                && !"anonymousUser".equals(principal.getName()))
+                ? principal.getName()
+                : null;
+        SharehouseResultRes response = sharehouseService.getSharehouseDetail(houseId, email);
         return ResponseEntity.ok(DataResponse.of(ResponseCode.SUCCESS, response));
     }
 
@@ -171,18 +177,60 @@ public class SharehouseController {
         return ResponseEntity.ok(DataResponse.of(ResponseCode.SUCCESS, response));
     }
 
-    @Operation(summary = "List sharehouse listings.")
+    @Operation(summary = "List my recently viewed sharehouses.",
+            description = "Returns the 5 listings the current user has most recently viewed.")
+    @GetMapping("/recent")
+    public ResponseEntity<DataResponse<List<SharehouseRes>>> getMyRecentSharehouses(Principal principal) {
+        String email = principal.getName();
+        List<SharehouseRes> response = sharehouseService.getMyRecentSharehouses(email);
+        return ResponseEntity.ok(DataResponse.of(ResponseCode.SUCCESS, response));
+    }
+
+    @Operation(summary = "List sharehouse listings.",
+            description = "If the caller is authenticated and provides a non-empty `keyword`, the keyword is also stored in their recent searches.")
     @GetMapping
     public ResponseEntity<DataResponse<PageResponse<SharehouseRes>>> getSharehouseList(
             @ModelAttribute SharehouseSearchReq req,
-            @PageableDefault(size = 10, sort = "viewCount", direction = Sort.Direction.DESC) Pageable pageable) {
+            @PageableDefault(size = 10, sort = "viewCount", direction = Sort.Direction.DESC) Pageable pageable,
+            Principal principal) {
 
-        // 1. 서비스에서 반환하는 타입인 Page<SharehouseRes>에 맞춰 변수 타입 수정
-        Page<SharehouseRes> resultPage = sharehouseService.getSharehouseList(req, pageable);
+        String email = (principal != null && principal.getName() != null
+                && !"anonymousUser".equals(principal.getName()))
+                ? principal.getName()
+                : null;
 
-        // 2. PageResponse의 제네릭 타입도 SharehouseRes로 수정
+        Page<SharehouseRes> resultPage = sharehouseService.getSharehouseList(req, pageable, email);
         PageResponse<SharehouseRes> response = new PageResponse<>(resultPage);
 
         return ResponseEntity.ok(DataResponse.of(ResponseCode.SUCCESS, response));
+    }
+
+    @Operation(summary = "List my recent search keywords.",
+            description = "Returns up to 10 most recent search keywords used by the current user.")
+    @GetMapping("/recent-searches")
+    public ResponseEntity<DataResponse<List<RecentSearchRes>>> getMyRecentSearches(Principal principal) {
+        String email = principal.getName();
+        List<RecentSearchRes> response = sharehouseService.getMyRecentSearches(email);
+        return ResponseEntity.ok(DataResponse.of(ResponseCode.SUCCESS, response));
+    }
+
+    @Operation(summary = "Delete a single recent search keyword.",
+            description = "Deletes one of my recent search keywords by its id. Useful for the chip's X button.")
+    @DeleteMapping("/recent-searches/{searchId}")
+    public ResponseEntity<DataResponse<Void>> deleteRecentSearch(
+            Principal principal,
+            @PathVariable Long searchId) {
+        String email = principal.getName();
+        sharehouseService.deleteRecentSearch(email, searchId);
+        return ResponseEntity.ok(DataResponse.of(ResponseCode.SUCCESS));
+    }
+
+    @Operation(summary = "Delete all my recent search keywords.",
+            description = "Clears the entire recent searches list (\"Delete all\" button).")
+    @DeleteMapping("/recent-searches")
+    public ResponseEntity<DataResponse<Void>> deleteAllRecentSearches(Principal principal) {
+        String email = principal.getName();
+        sharehouseService.deleteAllRecentSearches(email);
+        return ResponseEntity.ok(DataResponse.of(ResponseCode.SUCCESS));
     }
 }

@@ -1,6 +1,7 @@
 package com.maritel.trustay.service;
 
 import com.maritel.trustay.dto.req.ChatRoomCreateReq;
+import com.maritel.trustay.dto.res.ChatRoomCreateRes;
 import com.maritel.trustay.dto.res.ChatRoomListRes;
 import com.maritel.trustay.entity.ChatMessage;
 import com.maritel.trustay.entity.ChatRoom;
@@ -29,8 +30,8 @@ public class ChatRoomService {
     private final MemberRepository memberRepository;
     private final SharehouseRepository sharehouseRepository;
 
-    // 1. 채팅방 생성 (이미 있으면 기존 방 반환)
-    public Long createOrGetRoom(ChatRoomCreateReq req) {
+    // 1. 채팅방 생성 (이미 있으면 기존 방 반환). roomId 와 houseId 를 함께 반환.
+    public ChatRoomCreateRes createOrGetRoom(ChatRoomCreateReq req) {
         Sharehouse house = sharehouseRepository.findById(req.getHouseId())
                 .orElseThrow(() -> new EntityNotFoundException("Sharehouse not found."));
 
@@ -49,7 +50,10 @@ public class ChatRoomService {
                 .findBySharehouse_IdAndSender_IdAndReceiver_Id(house.getId(), sender.getId(), host.getId());
 
         if (existingRoom.isPresent()) {
-            return existingRoom.get().getId();
+            return ChatRoomCreateRes.builder()
+                    .roomId(existingRoom.get().getId())
+                    .houseId(house.getId())
+                    .build();
         }
 
         // 새 방 생성
@@ -59,7 +63,11 @@ public class ChatRoomService {
                 .receiver(host)
                 .build();
 
-        return chatRoomRepository.save(newRoom).getId();
+        ChatRoom saved = chatRoomRepository.save(newRoom);
+        return ChatRoomCreateRes.builder()
+                .roomId(saved.getId())
+                .houseId(house.getId())
+                .build();
     }
 
     // 2. 참여 중인 채팅방 목록 조회 (나가지 않은 방만, 마지막 메시지 포함)
