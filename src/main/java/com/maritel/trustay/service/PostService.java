@@ -2,6 +2,7 @@ package com.maritel.trustay.service;
 
 import com.maritel.trustay.dto.req.PostReq;
 import com.maritel.trustay.dto.req.PostUpdateReq;
+import com.maritel.trustay.dto.res.PostLikeToggleRes;
 import com.maritel.trustay.dto.res.PostRes;
 import com.maritel.trustay.entity.*;
 import com.maritel.trustay.repository.*;
@@ -13,7 +14,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -29,6 +32,8 @@ public class PostService {
     private final SharehouseRepository sharehouseRepository;
     private final MemberRepository memberRepository;
     private final ImageRepository imageRepository;
+    private final PostLikeRepository postLikeRepository;
+    private final CommentRepository commentRepository;
 
     /**
      * 게시글 작성
@@ -113,7 +118,7 @@ public class PostService {
      * 게시글 상세 조회
      */
     @Transactional
-    public PostRes getPostDetail(Long postId) {
+    public PostRes getPostDetail(Long postId, String viewerEmailOrNull) {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다."));
 
@@ -126,32 +131,71 @@ public class PostService {
                 .map(postImage -> postImage.getImage().getImageUrl())
                 .collect(Collectors.toList());
 
-        return PostRes.from(post, imageUrls);
+        long commentCount = commentRepository.countByPost_Id(postId);
+        boolean likedByMe = isLikedByEmail(postId, viewerEmailOrNull);
+
+        return PostRes.from(post, imageUrls, commentCount, likedByMe);
+    }
+
+    /** 호환용 오버로드 (Principal 없는 호출) */
+    @Transactional
+    public PostRes getPostDetail(Long postId) {
+        return getPostDetail(postId, null);
+    }
+
+    private boolean isLikedByEmail(Long postId, String email) {
+        if (email == null) return false;
+        return memberRepository.findByEmail(email)
+                .map(m -> postLikeRepository.existsByPost_IdAndMember_Id(postId, m.getId()))
+                .orElse(false);
+    }
+
+    /**
+     * 게시글 좋아요 토글 (있으면 삭제, 없으면 생성)
+     */
+    @Transactional
+    public PostLikeToggleRes toggleLike(String email, Long postId) {
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("회원 정보를 찾을 수 없습니다."));
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다."));
+
+        boolean liked;
+        var existing = postLikeRepository.findByPost_IdAndMember_Id(postId, member.getId());
+        if (existing.isPresent()) {
+            postLikeRepository.delete(existing.get());
+            post.decreaseLikeCount();
+            liked = false;
+        } else {
+            postLikeRepository.save(PostLike.builder()
+                    .post(post)
+                    .member(member)
+                    .build());
+            post.increaseLikeCount();
+            liked = true;
+        }
+        return PostLikeToggleRes.builder()
+                .postId(postId)
+                .liked(liked)
+                .likeCount(post.getLikeCount())
+                .build();
     }
 
     /**
      * 일반 커뮤니티 게시글 목록 조회
      */
     public Page<PostRes> getCommunityPosts(Long communityId, Pageable pageable) {
-        Page<Post> posts = postRepository.findByCommunityIdOrderByNoticeAndRegTimeDesc(communityId, pageable);
-        return posts.map(post -> {
-            List<String> imageUrls = postImageRepository.findByPostIdOrderByDisplayOrderAsc(post.getId())
-                    .stream()
-                    .map(postImage -> postImage.getImage().getImageUrl())
-                    .collect(Collectors.toList());
-            return PostRes.from(post, imageUrls);
-        });
+        return mapWithCommentCount(
+                postRepository.findByCommunityIdOrderByNoticeAndRegTimeDesc(communityId, pageable));
     }
 
     /**
      * 쉐어하우스 커뮤니티 게시글 목록 조회
      */
     public Page<PostRes> getSharehouseCommunityPosts(Long sharehouseId, Pageable pageable) {
-        // 쉐어하우스 존재 확인
         sharehouseRepository.findById(sharehouseId)
                 .orElseThrow(() -> new IllegalArgumentException("쉐어하우스를 찾을 수 없습니다."));
 
-        // 쉐어하우스 커뮤니티가 없으면 빈 페이지 반환
         SharehouseCommunity sharehouseCommunity = sharehouseCommunityRepository.findBySharehouseId(sharehouseId)
                 .orElse(null);
 
@@ -159,29 +203,15 @@ public class PostService {
             return Page.empty(pageable);
         }
 
-        Page<Post> posts = postRepository.findBySharehouseCommunityIdOrderByNoticeAndRegTimeDesc(
-                sharehouseCommunity.getId(), pageable);
-        return posts.map(post -> {
-            List<String> imageUrls = postImageRepository.findByPostIdOrderByDisplayOrderAsc(post.getId())
-                    .stream()
-                    .map(postImage -> postImage.getImage().getImageUrl())
-                    .collect(Collectors.toList());
-            return PostRes.from(post, imageUrls);
-        });
+        return mapWithCommentCount(postRepository.findBySharehouseCommunityIdOrderByNoticeAndRegTimeDesc(
+                sharehouseCommunity.getId(), pageable));
     }
 
     /**
      * 전체 게시글 피드 (Posts for you)
      */
     public Page<PostRes> getAllPosts(Pageable pageable) {
-        Page<Post> posts = postRepository.findAllCommunityPosts(pageable);
-        return posts.map(post -> {
-            List<String> imageUrls = postImageRepository.findByPostIdOrderByDisplayOrderAsc(post.getId())
-                    .stream()
-                    .map(postImage -> postImage.getImage().getImageUrl())
-                    .collect(Collectors.toList());
-            return PostRes.from(post, imageUrls);
-        });
+        return mapWithCommentCount(postRepository.findAllCommunityPosts(pageable));
     }
 
     /**
@@ -191,14 +221,32 @@ public class PostService {
         Member member = memberRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new IllegalArgumentException("회원 정보를 찾을 수 없습니다."));
 
-        Page<Post> posts = postRepository.findByAuthorId(member.getId(), pageable);
+        return mapWithCommentCount(postRepository.findByAuthorId(member.getId(), pageable));
+    }
+
+    /** 게시글 페이지 → PostRes 페이지 변환 (commentCount 일괄 집계) */
+    private Page<PostRes> mapWithCommentCount(Page<Post> posts) {
+        List<Long> postIds = posts.map(Post::getId).toList();
+        Map<Long, Long> countMap = aggregateCommentCounts(postIds);
         return posts.map(post -> {
             List<String> imageUrls = postImageRepository.findByPostIdOrderByDisplayOrderAsc(post.getId())
                     .stream()
                     .map(postImage -> postImage.getImage().getImageUrl())
                     .collect(Collectors.toList());
-            return PostRes.from(post, imageUrls);
+            long count = countMap.getOrDefault(post.getId(), 0L);
+            return PostRes.from(post, imageUrls, count, false);
         });
+    }
+
+    private Map<Long, Long> aggregateCommentCounts(List<Long> postIds) {
+        if (postIds == null || postIds.isEmpty()) return Map.of();
+        Map<Long, Long> result = new HashMap<>();
+        for (Object[] row : commentRepository.aggregateCountByPostIds(postIds)) {
+            Long pid = ((Number) row[0]).longValue();
+            Long cnt = ((Number) row[1]).longValue();
+            result.put(pid, cnt);
+        }
+        return result;
     }
 
     /**
@@ -284,8 +332,10 @@ public class PostService {
             throw new IllegalStateException("삭제 권한이 없습니다.");
         }
 
-        // 이미지 삭제
+        // 이미지 / 댓글 / 좋아요 정리
         postImageRepository.deleteByPostId(postId);
+        commentRepository.deleteByPost_Id(postId);
+        postLikeRepository.deleteByPost_Id(postId);
 
         // 게시글 삭제
         postRepository.delete(post);

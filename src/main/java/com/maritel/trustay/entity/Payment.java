@@ -63,7 +63,7 @@ public class Payment extends BaseEntity {
 
     @Builder
     public Payment(Member member, Long amount, String targetAccount, PaymentType type, Contract contract,
-                   String orderId, DutchPayGroup dutchPayGroup) {
+                   String orderId, DutchPayGroup dutchPayGroup, Boolean isAutoTransfer) {
         this.member = member;
         this.amount = amount;
         this.targetAccount = targetAccount;
@@ -73,6 +73,7 @@ public class Payment extends BaseEntity {
         this.dutchPayGroup = dutchPayGroup;
         this.status = PaymentStatus.PENDING;
         this.transactionDate = LocalDateTime.now();
+        this.isAutoTransfer = isAutoTransfer != null && isAutoTransfer;
     }
 
     public void confirmToss(String paymentKey) {

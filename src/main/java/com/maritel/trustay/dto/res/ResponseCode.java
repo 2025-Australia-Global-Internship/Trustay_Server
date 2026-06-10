@@ -70,6 +70,14 @@ public enum ResponseCode {
     NOT_FOUND_NOTIFICATION(4045, "알림을 찾을 수 없습니다."),
     NOTIFICATION_FORBIDDEN(4036, "본인의 알림만 처리할 수 있습니다."),
 
+    /* Comment / Post Like */
+    NOT_FOUND_COMMENT(4046, "댓글을 찾을 수 없습니다."),
+    NOT_FOUND_POST(4047, "게시글을 찾을 수 없습니다."),
+
+    /* Auto Transfer */
+    NOT_FOUND_AUTO_TRANSFER(4048, "자동이체 스케줄을 찾을 수 없습니다."),
+    AUTO_TRANSFER_FORBIDDEN(4037, "본인의 자동이체 스케줄만 처리할 수 있습니다."),
+
     TOSS_PAYMENT_FAILED(5001, "토스 결제 승인에 실패했습니다."),
     ;
 

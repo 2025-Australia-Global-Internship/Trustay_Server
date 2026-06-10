@@ -57,7 +57,7 @@ public class ReviewController {
             ReviewRes res = reviewService.updateReview(principal.getName(), reviewId, req);
             return ResponseEntity.ok(DataResponse.of(ResponseCode.SUCCESS, res));
         } catch (EntityNotFoundException e) {
-            return ResponseEntity.ok(DataResponse.of(ResponseCode.NOT_FOUND_REVIEW));
+            return error(ResponseCode.NOT_FOUND_REVIEW);
         } catch (IllegalStateException e) {
             return forbidden(e.getMessage());
         }
@@ -72,7 +72,7 @@ public class ReviewController {
             reviewService.deleteReview(principal.getName(), reviewId);
             return ResponseEntity.ok(DataResponse.of(ResponseCode.SUCCESS));
         } catch (EntityNotFoundException e) {
-            return ResponseEntity.ok(DataResponse.of(ResponseCode.NOT_FOUND_REVIEW));
+            return error(ResponseCode.NOT_FOUND_REVIEW);
         } catch (IllegalStateException e) {
             return forbidden(e.getMessage());
         }
@@ -114,5 +114,10 @@ public class ReviewController {
 
     private static <T> ResponseEntity<DataResponse<T>> forbidden(String message) {
         return ResponseEntity.ok(DataResponse.of(ResponseCode.FORBIDDEN.getCode(), message, null));
+    }
+
+    /** 어떤 응답 타입에도 안전하게 사용할 수 있는 ResponseCode 기반 에러 응답 헬퍼 */
+    private static <T> ResponseEntity<DataResponse<T>> error(ResponseCode code) {
+        return ResponseEntity.ok(DataResponse.of(code.getCode(), code.getMessage(), null));
     }
 }

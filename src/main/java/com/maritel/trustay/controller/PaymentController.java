@@ -2,13 +2,17 @@ package com.maritel.trustay.controller;
 
 import com.maritel.trustay.client.TossPaymentsApiException;
 import com.maritel.trustay.constant.PaymentType;
+import com.maritel.trustay.dto.req.AutoTransferReq;
+import com.maritel.trustay.dto.req.AutoTransferUpdateReq;
 import com.maritel.trustay.dto.req.DutchPayCreateReq;
 import com.maritel.trustay.dto.req.PaymentConfirmReq;
 import com.maritel.trustay.dto.req.RentPaymentPrepareReq;
 import com.maritel.trustay.dto.res.*;
+import com.maritel.trustay.service.AutoTransferService;
 import com.maritel.trustay.service.PaymentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,10 +28,11 @@ import java.util.List;
 @RequestMapping("/api/trustay/payments")
 @RequiredArgsConstructor
 @Slf4j
-@Tag(name = "Payment API", description = "토스 테스트 결제, 월세 준비, N빵(더치페이)")
+@Tag(name = "Payment API", description = "토스 테스트 결제, 월세 준비, N빵(더치페이), 자동이체")
 public class PaymentController {
 
     private final PaymentService paymentService;
+    private final AutoTransferService autoTransferService;
 
     @Operation(summary = "토스 결제위젯용 클라이언트 키 조회")
     @GetMapping("/toss/client-config")
@@ -113,28 +118,77 @@ public class PaymentController {
         return ResponseEntity.ok(DataResponse.of(ResponseCode.NOT_VALID.getCode(), message, null));
     }
 
+    private static <T> ResponseEntity<DataResponse<T>> forbidden(String message) {
+        return ResponseEntity.ok(DataResponse.of(ResponseCode.FORBIDDEN.getCode(), message, null));
+    }
+
+    private static <T> ResponseEntity<DataResponse<T>> error(ResponseCode code) {
+        return ResponseEntity.ok(DataResponse.of(code.getCode(), code.getMessage(), null));
+    }
+
     // =========================================================================
-    // TODO: [신규 기능] 자동이체 스케줄 관리 — DB 테이블 신규 필요
-    //   현재 Payment.autoTransfer 단일 boolean 필드만 존재. PDF 기획서의
-    //   "쉐어비 및 공과금 자동이체"를 지원하려면 반복 결제 스케줄이 필요함.
-    //
-    //   - 신규 엔티티: AutoTransferSchedule
-    //     (id, payer_id FK->Member, payee_id FK->Member, contract_id FK->Contract,
-    //      amount, type[RENT|UTILITY], day_of_month, next_run_at,
-    //      active boolean, last_run_at, reg_time, mod_time)
-    //
-    //   - 신규 Repository / Service:
-    //     · AutoTransferScheduleRepository
-    //     · AutoTransferService (생성/조회/수정/취소, 다음 실행시각 계산)
-    //
-    //   - 신규 스케줄러:
-    //     @Scheduled(cron) 또는 Quartz 로 매일 0시에 next_run_at <= now인 스케줄 실행
-    //     → 토스 결제 prepare/confirm을 자동으로 트리거 (or 결제 대기 알림)
-    //
-    //   - 신규 API:
-    //     POST   /api/trustay/payments/auto-transfer       자동이체 등록
-    //     GET    /api/trustay/payments/auto-transfer/me    내 자동이체 목록
-    //     PUT    /api/trustay/payments/auto-transfer/{id}  수정
-    //     DELETE /api/trustay/payments/auto-transfer/{id}  취소
+    // 자동이체 스케줄 관리
     // =========================================================================
+
+    @Operation(summary = "자동이체 등록",
+            description = "매월 dayOfMonth 일에 Payment(PENDING)이 자동 생성되고 알림이 발송됩니다. 실제 결제 승인은 사용자가 진행해야 합니다.")
+    @PostMapping("/auto-transfer")
+    public ResponseEntity<DataResponse<AutoTransferRes>> createAutoTransfer(
+            Principal principal,
+            @Valid @RequestBody AutoTransferReq req) {
+        try {
+            AutoTransferRes res = autoTransferService.create(principal.getName(), req);
+            return ResponseEntity.ok(DataResponse.of(ResponseCode.SUCCESS, res));
+        } catch (IllegalArgumentException e) {
+            return badRequest(e.getMessage());
+        } catch (IllegalStateException e) {
+            return forbidden(e.getMessage());
+        }
+    }
+
+    @Operation(summary = "내 자동이체 스케줄 목록")
+    @GetMapping("/auto-transfer/me")
+    public ResponseEntity<DataResponse<List<AutoTransferRes>>> listMyAutoTransfers(Principal principal) {
+        try {
+            List<AutoTransferRes> list = autoTransferService.listMine(principal.getName());
+            return ResponseEntity.ok(DataResponse.of(ResponseCode.SUCCESS, list));
+        } catch (IllegalArgumentException e) {
+            return badRequest(e.getMessage());
+        }
+    }
+
+    @Operation(summary = "자동이체 스케줄 수정")
+    @PutMapping("/auto-transfer/{id}")
+    public ResponseEntity<DataResponse<AutoTransferRes>> updateAutoTransfer(
+            Principal principal,
+            @PathVariable Long id,
+            @Valid @RequestBody AutoTransferUpdateReq req) {
+        try {
+            AutoTransferRes res = autoTransferService.update(principal.getName(), id, req);
+            return ResponseEntity.ok(DataResponse.of(ResponseCode.SUCCESS, res));
+        } catch (EntityNotFoundException e) {
+            return error(ResponseCode.NOT_FOUND_AUTO_TRANSFER);
+        } catch (IllegalStateException e) {
+            return forbidden(e.getMessage());
+        } catch (IllegalArgumentException e) {
+            return badRequest(e.getMessage());
+        }
+    }
+
+    @Operation(summary = "자동이체 스케줄 취소 (active=false)")
+    @DeleteMapping("/auto-transfer/{id}")
+    public ResponseEntity<DataResponse<Void>> cancelAutoTransfer(
+            Principal principal,
+            @PathVariable Long id) {
+        try {
+            autoTransferService.cancel(principal.getName(), id);
+            return ResponseEntity.ok(DataResponse.of(ResponseCode.SUCCESS));
+        } catch (EntityNotFoundException e) {
+            return error(ResponseCode.NOT_FOUND_AUTO_TRANSFER);
+        } catch (IllegalStateException e) {
+            return forbidden(e.getMessage());
+        } catch (IllegalArgumentException e) {
+            return badRequest(e.getMessage());
+        }
+    }
 }

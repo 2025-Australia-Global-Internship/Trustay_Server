@@ -18,6 +18,8 @@ public class PostRes {
     private Boolean isNotice;
     private Integer viewCount;
     private Integer likeCount;
+    private Long commentCount;
+    private Boolean likedByMe;
     private String authorName;
     private String authorEmail;
     private String profileImageUrl;
@@ -26,25 +28,14 @@ public class PostRes {
     private LocalDateTime modTime;
 
     public static PostRes from(Post post) {
-        return PostRes.builder()
-                .id(post.getId())
-                .communityId(post.getCommunity() != null ? post.getCommunity().getId() : null)
-                .sharehouseId(post.getSharehouseCommunity() != null ? post.getSharehouseCommunity().getSharehouse().getId() : null)
-                .title(post.getTitle())
-                .content(post.getContent())
-                .isNotice(post.getIsNotice())
-                .viewCount(post.getViewCount())
-                .likeCount(post.getLikeCount())
-                .authorName(post.getAuthor().getName())
-                .authorEmail(post.getAuthor().getEmail())
-                .profileImageUrl(post.getAuthor().getProfile() != null && post.getAuthor().getProfile().getProfileImage() != null
-                        ? post.getAuthor().getProfile().getProfileImage().getImageUrl() : null)
-                .regTime(post.getRegTime())
-                .modTime(post.getModTime())
-                .build();
+        return from(post, null, 0L, false);
     }
 
     public static PostRes from(Post post, List<String> imageUrls) {
+        return from(post, imageUrls, 0L, false);
+    }
+
+    public static PostRes from(Post post, List<String> imageUrls, Long commentCount, Boolean likedByMe) {
         PostRes.PostResBuilder builder = PostRes.builder()
                 .id(post.getId())
                 .communityId(post.getCommunity() != null ? post.getCommunity().getId() : null)
@@ -54,6 +45,8 @@ public class PostRes {
                 .isNotice(post.getIsNotice())
                 .viewCount(post.getViewCount())
                 .likeCount(post.getLikeCount())
+                .commentCount(commentCount != null ? commentCount : 0L)
+                .likedByMe(likedByMe != null ? likedByMe : false)
                 .authorName(post.getAuthor().getName())
                 .authorEmail(post.getAuthor().getEmail())
                 .profileImageUrl(post.getAuthor().getProfile() != null && post.getAuthor().getProfile().getProfileImage() != null
