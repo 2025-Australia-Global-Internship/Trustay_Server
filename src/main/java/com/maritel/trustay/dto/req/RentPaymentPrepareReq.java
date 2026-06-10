@@ -13,11 +13,11 @@ import lombok.Setter;
 public class RentPaymentPrepareReq {
 
     @NotNull
-    @Schema(description = "계약 ID")
+    @Schema(description = "Contract ID.")
     private Long contractId;
 
     @NotNull
     @Min(100)
-    @Schema(description = "결제 금액(원). 토스 테스트 시에도 보통 100원 이상 권장")
+    @Schema(description = "Payment amount (KRW). Toss test mode also typically requires at least 100.")
     private Long amount;
 }

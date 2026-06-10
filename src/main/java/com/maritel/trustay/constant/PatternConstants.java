@@ -15,11 +15,11 @@ public class PatternConstants {
     public static final String PHONE_REGEX = "^(0\\d{1,2})-(\\d{3,4})-(\\d{4})$";
     public static final String ACCOUNT_REGEX = "^[0-9]{2,6}(-[0-9]{2,7}){1,3}$\n";
 
-    public static final String EMAIL_MESSAGE = "이메일 형식이 올바르지 않습니다.";
-    public static final String NAME_MESSAGE = "이름은 문자만 입력 가능합니다.";
-    public static final String PASSWORD_MESSAGE = "비밀번호는 영문자, 숫자, 특수문자(!@#$%^&*?_)만 포함하여 8~50자 사이여야 합니다.";
-    public static final String BIRTH_MESSAGE = "생년월일 형식은 yyyy-mm-dd입니다.";
-    public static final String PHONE_MESSAGE = "전화번호 형식은 000-0000-0000입니다.";
-    public static final String ACCOUNT_MESSAGE = "올바른 계좌번호 형식이 아닙니다.";
+    public static final String EMAIL_MESSAGE = "Please enter a valid email address.";
+    public static final String NAME_MESSAGE = "Name can only contain letters.";
+    public static final String PASSWORD_MESSAGE = "Password must be 8-50 characters and contain only letters, numbers, or special characters (!@#$%^&*?_).";
+    public static final String BIRTH_MESSAGE = "Date of birth must be in the format yyyy-mm-dd.";
+    public static final String PHONE_MESSAGE = "Phone number must be in the format 000-0000-0000.";
+    public static final String ACCOUNT_MESSAGE = "Please enter a valid account number.";
 
 }

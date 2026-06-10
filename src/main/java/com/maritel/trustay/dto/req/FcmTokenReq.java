@@ -11,14 +11,14 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-@Schema(description = "FCM 디바이스 토큰 등록/갱신 요청")
+@Schema(description = "Request to register or refresh an FCM device token.")
 public class FcmTokenReq {
 
     @NotBlank
-    @Schema(description = "FCM 디바이스 토큰", example = "dQwT9...")
+    @Schema(description = "FCM device token.", example = "dQwT9...")
     private String token;
 
     @NotNull
-    @Schema(description = "디바이스 종류", example = "ANDROID")
+    @Schema(description = "Device type.", example = "ANDROID")
     private DeviceType deviceType;
 }

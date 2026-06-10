@@ -8,6 +8,6 @@ import lombok.*;
 @ToString
 @AllArgsConstructor
 public class OAuthLoginReq {
-    @NotBlank(message = "토큰은 필수 입력 값입니다.")
+    @NotBlank(message = "Token is required.")
     private String firebaseToken;
 }

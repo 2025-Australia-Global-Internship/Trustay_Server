@@ -22,13 +22,13 @@ public class ChatRoomController {
     private final ChatMessageService chatMessageService;
 
     // 채팅방 생성
-    @Operation(summary = "채팅방 생성")
+    @Operation(summary = "Create a chat room.")
     @PostMapping("/room")
     public DataResponse<Long> createRoom(@RequestBody ChatRoomCreateReq req) {
         return DataResponse.of(chatRoomService.createOrGetRoom(req));
     }
 
-    @Operation(summary = "채팅 메시지 이력 조회")
+    @Operation(summary = "Get chat message history.")
     @GetMapping("/room/{roomId}/messages/{memberId}")
     public DataResponse<List<ChatMessageRes>> getChatHistory(
             @PathVariable Long roomId,
@@ -37,14 +37,14 @@ public class ChatRoomController {
     }
 
     // 나의 채팅방 목록 조회
-    @Operation(summary = "내 채팅방 목록 조회")
+    @Operation(summary = "List my chat rooms.")
     @GetMapping("/rooms/{memberId}")
     public DataResponse<List<ChatRoomListRes>> getRooms(@PathVariable Long memberId) {
         return DataResponse.of(chatRoomService.getMyChatRooms(memberId));
     }
 
     // 채팅방 나가기
-    @Operation(summary = "채팅방 나가기")
+    @Operation(summary = "Leave a chat room.")
     @PostMapping("/room/{roomId}/leave")
     public DataResponse<Void> leaveRoom(@PathVariable Long roomId, @RequestParam Long memberId) {
         chatRoomService.leaveRoom(roomId, memberId);

@@ -38,11 +38,11 @@ import java.util.stream.Collectors;
 public class PaymentService {
 
     public static final String SETTLEMENT_GUIDE_RENT =
-            "토스는 테스트 결제만 수행합니다. 실제 월세·임대료는 표시된 집주인 계좌로 직접 이체해 주세요.";
+            "Toss only processes test payments. For actual rent, please transfer directly to the host's account shown.";
     public static final String SETTLEMENT_GUIDE_DUTCH =
-            "토스는 테스트 결제만 수행합니다. 실제 N빵 정산금은 표시된 수금인 계좌로 직접 이체해 주세요.";
+            "Toss only processes test payments. For the actual split amount, please transfer directly to the payee's account shown.";
 
-    private static final String ACCOUNT_NOT_SET = "(계좌 미등록) 프로필에 정산 계좌를 입력해 주세요.";
+    private static final String ACCOUNT_NOT_SET = "(No account registered) Please add a settlement account to your profile.";
 
     private final MemberRepository memberRepository;
     private final ContractRepository contractRepository;
@@ -54,7 +54,7 @@ public class PaymentService {
 
     public TossClientConfigRes getTossClientConfig() {
         if (!StringUtils.hasText(tossPaymentsProperties.getClientKey())) {
-            throw new IllegalStateException("toss.payments.client-key 가 비어 있습니다.");
+            throw new IllegalStateException("toss.payments.client-key is not configured.");
         }
         return TossClientConfigRes.builder()
                 .clientKey(tossPaymentsProperties.getClientKey())
@@ -64,11 +64,11 @@ public class PaymentService {
     @Transactional
     public PaymentPrepareRes prepareRentPayment(String memberEmail, RentPaymentPrepareReq req) {
         Member tenant = memberRepository.findByEmail(memberEmail)
-                .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Member not found."));
         Contract contract = contractRepository.findByIdForPayment(req.getContractId())
-                .orElseThrow(() -> new IllegalArgumentException("계약을 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Contract not found."));
         if (!contract.getTenant().getId().equals(tenant.getId())) {
-            throw new IllegalArgumentException("해당 계약의 세입자만 월세 결제를 준비할 수 있습니다.");
+            throw new IllegalArgumentException("Only the tenant on this contract can prepare a rent payment.");
         }
         Profile landlordProfile = contract.getLandlord().getProfile();
         String targetAccount = resolveAccountDisplay(landlordProfile);
@@ -98,22 +98,22 @@ public class PaymentService {
     @Transactional
     public DutchPayCreateRes createDutchPay(String creatorEmail, DutchPayCreateReq req) {
         Member creator = memberRepository.findByEmail(creatorEmail)
-                .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Member not found."));
 
         List<Long> memberIds = req.getMemberIds();
         if (memberIds.size() < 2) {
-            throw new IllegalArgumentException("N빵 참여자는 2명 이상이어야 합니다.");
+            throw new IllegalArgumentException("A split payment requires at least 2 participants.");
         }
         if (new HashSet<>(memberIds).size() != memberIds.size()) {
-            throw new IllegalArgumentException("memberIds 에 중복이 있습니다.");
+            throw new IllegalArgumentException("memberIds contains duplicates.");
         }
         if (!memberIds.contains(req.getPayeeMemberId())) {
-            throw new IllegalArgumentException("payeeMemberId 는 memberIds 에 포함되어야 합니다.");
+            throw new IllegalArgumentException("payeeMemberId must be included in memberIds.");
         }
 
         List<Member> members = memberRepository.findAllById(new HashSet<>(memberIds));
         if (members.size() != memberIds.size()) {
-            throw new IllegalArgumentException("존재하지 않는 회원 ID 가 포함되어 있습니다.");
+            throw new IllegalArgumentException("One or more member IDs do not exist.");
         }
         Map<Long, Member> byId = members.stream().collect(Collectors.toMap(Member::getId, m -> m));
 
@@ -123,7 +123,7 @@ public class PaymentService {
         Contract contract = null;
         if (req.getContractId() != null) {
             contract = contractRepository.findById(req.getContractId())
-                    .orElseThrow(() -> new IllegalArgumentException("계약을 찾을 수 없습니다."));
+                    .orElseThrow(() -> new IllegalArgumentException("Contract not found."));
         }
 
         DutchPayGroup group = DutchPayGroup.builder()
@@ -171,17 +171,17 @@ public class PaymentService {
     @Transactional
     public PaymentConfirmRes confirmPayment(String memberEmail, PaymentConfirmReq req) {
         Member member = memberRepository.findByEmail(memberEmail)
-                .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Member not found."));
         Payment payment = paymentRepository.findByOrderId(req.getOrderId())
-                .orElseThrow(() -> new IllegalArgumentException("결제 건을 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Payment not found."));
         if (!payment.getMember().getId().equals(member.getId())) {
-            throw new IllegalArgumentException("본인 결제만 승인할 수 있습니다.");
+            throw new IllegalArgumentException("You can only approve your own payments.");
         }
         if (!payment.getAmount().equals(req.getAmount())) {
-            throw new IllegalArgumentException("금액이 일치하지 않습니다.");
+            throw new IllegalArgumentException("Payment amount doesn't match.");
         }
         if (payment.getStatus() != PaymentStatus.PENDING) {
-            throw new IllegalArgumentException("이미 처리된 결제입니다.");
+            throw new IllegalArgumentException("This payment has already been processed.");
         }
 
         try {
@@ -215,13 +215,13 @@ public class PaymentService {
      */
     private void publishPaymentConfirmedNotifications(Payment payment) {
         Member payer = payment.getMember();
-        String amountText = String.format("%,d원", payment.getAmount());
+        String amountText = String.format("%,d KRW", payment.getAmount());
 
         notificationService.notify(
                 payer,
                 NotificationType.PAYMENT,
-                "결제가 완료되었습니다.",
-                String.format("%s 결제 %s이(가) 정상 승인되었습니다.", payment.getType().name(), amountText),
+                "Payment complete",
+                String.format("Your %s payment of %s has been approved.", payment.getType().name(), amountText),
                 "/payments/" + payment.getId()
         );
 
@@ -235,8 +235,8 @@ public class PaymentService {
             notificationService.notify(
                     payee,
                     NotificationType.PAYMENT,
-                    "입금 확인 알림",
-                    String.format("%s님이 %s을(를) 결제했습니다.", payer.getName(), amountText),
+                    "Payment received",
+                    String.format("%s paid %s.", payer.getName(), amountText),
                     "/payments/" + payment.getId()
             );
         }
@@ -244,7 +244,7 @@ public class PaymentService {
 
     public List<PendingPaymentRes> listMyPendingPayments(String memberEmail) {
         Member member = memberRepository.findByEmail(memberEmail)
-                .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Member not found."));
         return paymentRepository.findByMember_IdAndStatusOrderByRegTimeDesc(member.getId(), PaymentStatus.PENDING)
                 .stream()
                 .map(p -> PendingPaymentRes.builder()
@@ -260,7 +260,7 @@ public class PaymentService {
 
     public List<PaymentHistoryRes> getMyPaymentHistory(String memberEmail, LocalDate from, LocalDate to, PaymentType type) {
         Member member = memberRepository.findByEmail(memberEmail)
-                .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Member not found."));
 
         LocalDateTime fromDateTime = from != null ? from.atStartOfDay() : null;
         LocalDateTime toDateTime = to != null ? to.atTime(LocalTime.MAX) : null;

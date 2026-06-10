@@ -21,9 +21,9 @@ public class ProfileUpdateReq {
     @Pattern(regexp = PatternConstants.ACCOUNT_REGEX, message = PatternConstants.ACCOUNT_MESSAGE)
     private String accountInfo;
 
-    @Size(max = 25, message = "성별은 25자 이내여야 합니다.")
+    @Size(max = 25, message = "Gender must be 25 characters or fewer.")
     private String gender;
-    @Size(max = 255, message = "주소는 255자 이내여야 합니다.")
+    @Size(max = 255, message = "Address must be 255 characters or fewer.")
     private String address;
 
     // 프로필 이미지는 MultipartFile로 별도 처리

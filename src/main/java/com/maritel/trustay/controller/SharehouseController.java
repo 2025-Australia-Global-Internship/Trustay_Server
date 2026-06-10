@@ -33,13 +33,13 @@ import java.util.List;
 @RequestMapping("/api/trustay/sharehouses")
 @RequiredArgsConstructor
 @Slf4j
-@Tag(name = "Sharehouse API", description = "쉐어하우스 매물 관리")
+@Tag(name = "Sharehouse API", description = "Manage sharehouse listings.")
 public class SharehouseController {
 
     private final SharehouseService sharehouseService;
     private final FileService fileService; // [추가] 컨트롤러에서 직접 파일 저장 호출
 
-    @Operation(summary = "매물 이미지 업로드", description = "이미지를 서버에 업로드하고 URL 리스트를 반환합니다.")
+    @Operation(summary = "Upload listing images.", description = "Uploads images to the server and returns the list of URLs.")
     @PostMapping(value = "/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<DataResponse<List<String>>> uploadSharehouseImages(
             @RequestPart("images") List<MultipartFile> images
@@ -54,7 +54,7 @@ public class SharehouseController {
         return ResponseEntity.ok(DataResponse.of(ResponseCode.SUCCESS, uploadedUrls));
     }
 
-    @Operation(summary = "쉐어하우스 매물 등록", description = "이미지 업로드 후 받은 URL을 포함하여 매물 정보를 등록합니다.")
+    @Operation(summary = "Register a sharehouse listing.", description = "Registers a listing using the image URLs returned from the upload step.")
     @PostMapping("") // consumes 삭제 (이제 JSON만 받음)
     public ResponseEntity<DataResponse<SharehouseRes>> registerSharehouse(
             Principal principal,
@@ -69,7 +69,7 @@ public class SharehouseController {
         return ResponseEntity.ok(DataResponse.of(ResponseCode.SUCCESS, response));
     }
 
-    @Operation(summary = "쉐어하우스 정보 수정", description = "집주인이 본인의 매물 정보를 수정합니다.")
+    @Operation(summary = "Update a sharehouse listing.", description = "The host updates their own listing information.")
     @PutMapping("/{houseId}")
     public ResponseEntity<DataResponse<Void>> updateSharehouse(
             @PathVariable Long houseId,
@@ -81,7 +81,7 @@ public class SharehouseController {
         return ResponseEntity.ok(DataResponse.of(ResponseCode.SUCCESS));
     }
 
-    @Operation(summary = "쉐어하우스 삭제", description = "집주인이 본인의 매물을 삭제합니다.")
+    @Operation(summary = "Delete a sharehouse listing.", description = "The host deletes their own listing.")
     @DeleteMapping("/{houseId}")
     public ResponseEntity<DataResponse<Void>> deleteSharehouse(
             @PathVariable Long houseId,
@@ -92,7 +92,7 @@ public class SharehouseController {
         return ResponseEntity.ok(DataResponse.of(ResponseCode.SUCCESS));
     }
 
-    @Operation(summary = "쉐어하우스 승인 상태 변경", description = "관리자가 매물을 승인(ACTIVE)하거나 거절(REJECTED)합니다.")
+    @Operation(summary = "Change a listing's approval status.", description = "Admins can approve (ACTIVE) or reject (REJECTED) a listing.")
     @PatchMapping("/{houseId}/approval")
     public ResponseEntity<DataResponse<Void>> approveSharehouse(
             @PathVariable Long houseId,
@@ -109,7 +109,7 @@ public class SharehouseController {
         return ResponseEntity.ok(DataResponse.of(ResponseCode.SUCCESS));
     }
 
-    @Operation(summary = "내가 들록한 쉐어하우스 자세히 보기", description = "상세보기를 하되, 조회수는 안 올라가는 api")
+    @Operation(summary = "View details of my sharehouse listing.", description = "Returns listing details without incrementing the view count.")
     @GetMapping("/my/{houseId}")
     public ResponseEntity<DataResponse<SharehouseResultRes>> getMySharehouseDetail(@PathVariable Long houseId) {
         SharehouseResultRes response = sharehouseService.getMySharehouseDetail(houseId);
@@ -117,7 +117,7 @@ public class SharehouseController {
         return ResponseEntity.ok(DataResponse.of(ResponseCode.SUCCESS, response));
     }
 
-    @Operation(summary = "내가 등록한 쉐어하우스 목록 조회", description = "로그인한 집주인이 본인이 등록한 매물 목록을 조회합니다.")
+    @Operation(summary = "List my sharehouse listings.", description = "Returns the listings registered by the current host.")
     @GetMapping("/my")
     public ResponseEntity<DataResponse<PageResponse<SharehouseRes>>> getMySharehouses(
             Principal principal,
@@ -135,14 +135,14 @@ public class SharehouseController {
         return ResponseEntity.ok(DataResponse.of(ResponseCode.SUCCESS, response));
     }
 
-    @Operation(summary = "쉐어하우스 상세 조회", description = "매물 상세 정보를 조회합니다. (조회수 1 증가)")
+    @Operation(summary = "Get sharehouse listing details.", description = "Returns the listing's details and increments the view count by one.")
     @GetMapping("/{houseId}")
     public ResponseEntity<DataResponse<SharehouseResultRes>> getSharehouseDetail(@PathVariable Long houseId) {
         SharehouseResultRes response = sharehouseService.getSharehouseDetail(houseId);
         return ResponseEntity.ok(DataResponse.of(ResponseCode.SUCCESS, response));
     }
 
-    @Operation(summary = "현재 거주 매물 조회", description = "로그인한 세입자의 현재 거주 중인 매물을 조회합니다.")
+    @Operation(summary = "Get my current residence.", description = "Returns the listing the current tenant is currently living in.")
     @GetMapping("/me/current")
     public ResponseEntity<DataResponse<SharehouseRes>> getMyCurrentSharehouse(Principal principal) {
         String email = principal.getName();
@@ -150,7 +150,7 @@ public class SharehouseController {
         return ResponseEntity.ok(DataResponse.of(ResponseCode.SUCCESS, response));
     }
 
-    @Operation(summary = "쉐어하우스 찜하기/찜 해제", description = "매물에 찜을 누르거나 해제합니다. (토글)")
+    @Operation(summary = "Toggle a sharehouse wishlist entry.", description = "Adds or removes the listing from the wishlist (toggle).")
     @PostMapping("/{houseId}/wish")
     public ResponseEntity<DataResponse<WishToggleRes>> toggleWish(
             Principal principal,
@@ -160,7 +160,7 @@ public class SharehouseController {
         return ResponseEntity.ok(DataResponse.of(ResponseCode.SUCCESS, response));
     }
 
-    @Operation(summary = "내가 찜한 쉐어하우스 목록", description = "로그인한 사용자가 찜한 매물 목록을 조회합니다.")
+    @Operation(summary = "List my wishlisted sharehouses.", description = "Returns the listings the current user has wishlisted.")
     @GetMapping("/wishlist")
     public ResponseEntity<DataResponse<PageResponse<SharehouseRes>>> getMyWishlist(
             Principal principal,
@@ -171,7 +171,7 @@ public class SharehouseController {
         return ResponseEntity.ok(DataResponse.of(ResponseCode.SUCCESS, response));
     }
 
-    @Operation(summary = "쉐어하우스 목록 조회")
+    @Operation(summary = "List sharehouse listings.")
     @GetMapping
     public ResponseEntity<DataResponse<PageResponse<SharehouseRes>>> getSharehouseList(
             @ModelAttribute SharehouseSearchReq req,

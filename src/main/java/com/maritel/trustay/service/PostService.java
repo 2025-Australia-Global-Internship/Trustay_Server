@@ -41,7 +41,7 @@ public class PostService {
     @Transactional
     public PostRes createPost(String userEmail, PostReq req) {
         Member member = memberRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new IllegalArgumentException("회원 정보를 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Member not found."));
 
         Community community = null;
         SharehouseCommunity sharehouseCommunity = null;
@@ -49,12 +49,12 @@ public class PostService {
         // 일반 커뮤니티 게시글
         if (req.getCommunityId() != null) {
             community = communityRepository.findById(req.getCommunityId())
-                    .orElseThrow(() -> new IllegalArgumentException("커뮤니티를 찾을 수 없습니다."));
+                    .orElseThrow(() -> new IllegalArgumentException("Community not found."));
         }
         // 쉐어하우스 커뮤니티 게시글
         else if (req.getSharehouseId() != null) {
             Sharehouse sharehouse = sharehouseRepository.findById(req.getSharehouseId())
-                    .orElseThrow(() -> new IllegalArgumentException("쉐어하우스를 찾을 수 없습니다."));
+                    .orElseThrow(() -> new IllegalArgumentException("Sharehouse not found."));
 
             // 쉐어하우스 커뮤니티가 없으면 생성
             sharehouseCommunity = sharehouseCommunityRepository.findBySharehouseId(req.getSharehouseId())
@@ -67,10 +67,10 @@ public class PostService {
 
             // 쉐어하우스 게시글은 집주인만 작성 가능
             if (!sharehouse.getHost().getId().equals(member.getId())) {
-                throw new IllegalStateException("쉐어하우스 게시글은 집주인만 작성할 수 있습니다.");
+                throw new IllegalStateException("Only the host can post in a sharehouse community.");
             }
         } else {
-            throw new IllegalArgumentException("커뮤니티 ID 또는 쉐어하우스 ID가 필요합니다.");
+            throw new IllegalArgumentException("Either a community ID or a sharehouse ID is required.");
         }
 
         Post post = Post.builder()
@@ -120,7 +120,7 @@ public class PostService {
     @Transactional
     public PostRes getPostDetail(Long postId, String viewerEmailOrNull) {
         Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Post not found."));
 
         // 조회수 증가
         postRepository.increaseViewCount(postId);
@@ -156,9 +156,9 @@ public class PostService {
     @Transactional
     public PostLikeToggleRes toggleLike(String email, Long postId) {
         Member member = memberRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("회원 정보를 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Member not found."));
         Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Post not found."));
 
         boolean liked;
         var existing = postLikeRepository.findByPost_IdAndMember_Id(postId, member.getId());
@@ -194,7 +194,7 @@ public class PostService {
      */
     public Page<PostRes> getSharehouseCommunityPosts(Long sharehouseId, Pageable pageable) {
         sharehouseRepository.findById(sharehouseId)
-                .orElseThrow(() -> new IllegalArgumentException("쉐어하우스를 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Sharehouse not found."));
 
         SharehouseCommunity sharehouseCommunity = sharehouseCommunityRepository.findBySharehouseId(sharehouseId)
                 .orElse(null);
@@ -219,7 +219,7 @@ public class PostService {
      */
     public Page<PostRes> getMyPosts(String userEmail, Pageable pageable) {
         Member member = memberRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new IllegalArgumentException("회원 정보를 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Member not found."));
 
         return mapWithCommentCount(postRepository.findByAuthorId(member.getId(), pageable));
     }
@@ -255,10 +255,10 @@ public class PostService {
     @Transactional
     public void updatePost(String userEmail, Long postId, PostUpdateReq req) {
         Member member = memberRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new IllegalArgumentException("회원 정보를 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Member not found."));
 
         Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Post not found."));
 
         // 권한 확인 로직 (기존과 동일)
         boolean hasPermission = false;
@@ -270,7 +270,7 @@ public class PostService {
         }
 
         if (!hasPermission) {
-            throw new IllegalStateException("수정 권한이 없습니다.");
+            throw new IllegalStateException("You don't have permission to edit this post.");
         }
 
         // 1. 게시글 본문 수정
@@ -310,10 +310,10 @@ public class PostService {
     @Transactional
     public void deletePost(String userEmail, Long postId) {
         Member member = memberRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new IllegalArgumentException("회원 정보를 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Member not found."));
 
         Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Post not found."));
 
         // 권한 확인
         boolean hasPermission = false;
@@ -329,7 +329,7 @@ public class PostService {
         }
 
         if (!hasPermission) {
-            throw new IllegalStateException("삭제 권한이 없습니다.");
+            throw new IllegalStateException("You don't have permission to delete this post.");
         }
 
         // 이미지 / 댓글 / 좋아요 정리

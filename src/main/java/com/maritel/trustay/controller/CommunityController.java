@@ -22,12 +22,12 @@ import java.util.List;
 @RequestMapping("/api/trustay/communities")
 @RequiredArgsConstructor
 @Slf4j
-@Tag(name = "Community API", description = "커뮤니티 관리")
+@Tag(name = "Community API", description = "Manage communities.")
 public class CommunityController {
 
     private final CommunityService communityService;
 
-    @Operation(summary = "커뮤니티 생성", description = "사용자가 새로운 커뮤니티를 생성합니다.")
+    @Operation(summary = "Create a community.", description = "The user creates a new community.")
     @PostMapping
     public ResponseEntity<DataResponse<CommunityRes>> createCommunity(
             Principal principal,
@@ -38,7 +38,7 @@ public class CommunityController {
         return ResponseEntity.ok(DataResponse.of(ResponseCode.SUCCESS, response));
     }
 
-    @Operation(summary = "커뮤니티 목록 조회", description = "커뮤니티 목록을 조회합니다. 키워드로 검색 가능합니다.")
+    @Operation(summary = "List communities.", description = "Returns the list of communities. Supports keyword search.")
     @GetMapping
     public ResponseEntity<DataResponse<PageResponse<CommunityRes>>> getCommunityList(
             @RequestParam(required = false) String keyword,
@@ -49,7 +49,7 @@ public class CommunityController {
         return ResponseEntity.ok(DataResponse.of(ResponseCode.SUCCESS, response));
     }
 
-    @Operation(summary = "인기 커뮤니티 목록 조회", description = "멤버 수 기준으로 인기 커뮤니티를 조회합니다.")
+    @Operation(summary = "List trending communities.", description = "Returns trending communities sorted by member count.")
     @GetMapping("/trending")
     public ResponseEntity<DataResponse<PageResponse<CommunityRes>>> getTrendingCommunities(
             @PageableDefault(size = 10) Pageable pageable) {
@@ -59,7 +59,7 @@ public class CommunityController {
         return ResponseEntity.ok(DataResponse.of(ResponseCode.SUCCESS, response));
     }
 
-    @Operation(summary = "내가 만든 커뮤니티 목록", description = "로그인한 사용자가 생성한 커뮤니티 목록을 조회합니다.")
+    @Operation(summary = "List communities I created.", description = "Returns communities created by the current user.")
     @GetMapping("/created")
     public ResponseEntity<DataResponse<List<CommunityRes>>> getMyCommunities(Principal principal) {
         String userEmail = principal.getName();
@@ -67,7 +67,7 @@ public class CommunityController {
         return ResponseEntity.ok(DataResponse.of(ResponseCode.SUCCESS, response));
     }
 
-    @Operation(summary = "내가 가입한 커뮤니티 목록", description = "로그인한 사용자가 가입한 커뮤니티 목록을 조회합니다.")
+    @Operation(summary = "List communities I've joined.", description = "Returns communities the current user has joined.")
     @GetMapping("/joined")
     public ResponseEntity<DataResponse<List<CommunityRes>>> getJoinedCommunities(Principal principal) {
         String userEmail = principal.getName();
@@ -75,14 +75,14 @@ public class CommunityController {
         return ResponseEntity.ok(DataResponse.of(ResponseCode.SUCCESS, response));
     }
 
-    @Operation(summary = "커뮤니티 상세 조회", description = "커뮤니티 상세 정보를 조회합니다.")
+    @Operation(summary = "Get community details.", description = "Returns the details of a community.")
     @GetMapping("/{communityId}")
     public ResponseEntity<DataResponse<CommunityRes>> getCommunityDetail(@PathVariable Long communityId) {
         CommunityRes response = communityService.getCommunityDetail(communityId);
         return ResponseEntity.ok(DataResponse.of(ResponseCode.SUCCESS, response));
     }
 
-    @Operation(summary = "커뮤니티 가입", description = "커뮤니티에 가입합니다.")
+    @Operation(summary = "Join a community.", description = "Joins the specified community.")
     @PostMapping("/{communityId}/join")
     public ResponseEntity<DataResponse<Void>> joinCommunity(
             Principal principal,
@@ -93,7 +93,7 @@ public class CommunityController {
         return ResponseEntity.ok(DataResponse.of(ResponseCode.SUCCESS));
     }
 
-    @Operation(summary = "커뮤니티 탈퇴", description = "커뮤니티에서 탈퇴합니다.")
+    @Operation(summary = "Leave a community.", description = "Leaves the specified community.")
     @PostMapping("/{communityId}/leave")
     public ResponseEntity<DataResponse<Void>> leaveCommunity(
             Principal principal,
@@ -104,7 +104,7 @@ public class CommunityController {
         return ResponseEntity.ok(DataResponse.of(ResponseCode.SUCCESS));
     }
 
-    @Operation(summary = "커뮤니티 수정", description = "커뮤니티 소유자가 커뮤니티 정보를 수정합니다.")
+    @Operation(summary = "Update a community.", description = "The community owner updates the community's information.")
     @PutMapping("/{communityId}")
     public ResponseEntity<DataResponse<Void>> updateCommunity(
             Principal principal,
@@ -116,7 +116,7 @@ public class CommunityController {
         return ResponseEntity.ok(DataResponse.of(ResponseCode.SUCCESS));
     }
 
-    @Operation(summary = "커뮤니티 삭제", description = "커뮤니티 소유자가 커뮤니티를 삭제합니다.")
+    @Operation(summary = "Delete a community.", description = "The community owner deletes the community.")
     @DeleteMapping("/{communityId}")
     public ResponseEntity<DataResponse<Void>> deleteCommunity(
             Principal principal,

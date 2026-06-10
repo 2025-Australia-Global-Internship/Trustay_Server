@@ -10,11 +10,11 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-@Schema(description = "댓글 수정 요청")
+@Schema(description = "Request to update a comment.")
 public class CommentUpdateReq {
 
     @NotBlank
     @Size(max = 1000)
-    @Schema(description = "수정할 댓글 내용")
+    @Schema(description = "New comment content.")
     private String content;
 }

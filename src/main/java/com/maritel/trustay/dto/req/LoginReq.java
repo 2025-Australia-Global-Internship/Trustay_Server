@@ -14,13 +14,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 @AllArgsConstructor
 public class LoginReq {
 
-    @NotBlank(message = "이메일은 필수 입력 값입니다.")
+    @NotBlank(message = "Email is required.")
     @Pattern(regexp = PatternConstants.EMAIL_REGEX, message = PatternConstants.EMAIL_MESSAGE)
-    @Size(max = 100, message = "이메일은 100자 이하로 입력해주세요.")
+    @Size(max = 100, message = "Email must be 100 characters or fewer.")
     private String email;
 
-    @NotBlank(message = "비밀번호는 필수 입력 값입니다.")
+    @NotBlank(message = "Password is required.")
     @Pattern(regexp = PatternConstants.PASSWORD_REGEX, message = PatternConstants.PASSWORD_MESSAGE)
-    @Size(min = 8, max = 50, message = "비밀번호는 최소 8자 이상, 최대 50자 이하로 입력해주세요.")
+    @Size(min = 8, max = 50, message = "Password must be between 8 and 50 characters.")
     private String passwd;
 }

@@ -11,6 +11,6 @@ import lombok.ToString;
 @ToString
 @NoArgsConstructor
 public class LogoutReq {
-    @NotBlank(message = "토큰은 필수 입니다")
+    @NotBlank(message = "Token is required.")
     private String token;
 }

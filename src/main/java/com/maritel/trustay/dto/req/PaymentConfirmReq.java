@@ -14,11 +14,11 @@ import lombok.Setter;
 public class PaymentConfirmReq {
 
     @NotBlank
-    @Schema(description = "토스 결제위젯에서 받은 paymentKey")
+    @Schema(description = "paymentKey returned by the Toss payment widget.")
     private String paymentKey;
 
     @NotBlank
-    @Schema(description = "prepare 단계에서 서버가 내려준 orderId")
+    @Schema(description = "orderId issued by the server during the prepare step.")
     private String orderId;
 
     @NotNull

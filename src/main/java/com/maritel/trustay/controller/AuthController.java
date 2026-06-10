@@ -36,7 +36,7 @@ public class AuthController {
         this.tokenBlacklistService = tokenBlacklistService;
     }
 
-    @Operation(summary = "로그인")
+    @Operation(summary = "Log in.")
     @PostMapping("/login")
     public ResponseEntity<DataResponse<LoginResultRes>> login(@RequestBody LoginReq req) {
         LoginResultRes res = new LoginResultRes();
@@ -51,7 +51,7 @@ public class AuthController {
         }
     }
 
-    @Operation(summary = "OAuth 로그인")
+    @Operation(summary = "OAuth login.")
     @PostMapping("/oauth")
     public ResponseEntity<DataResponse<LoginResultRes>> oAuthLogin(@RequestBody OAuthLoginReq req) {
         LoginResultRes res = new LoginResultRes();
@@ -67,12 +67,12 @@ public class AuthController {
     }
 
 
-    @Operation(summary = "로그아웃")
+    @Operation(summary = "Log out.")
     @PostMapping("/logout")
     public ResponseEntity<DataResponse<Void>> logout(HttpServletRequest request) {
         String header = request.getHeader("Authorization");
         if (header == null || !header.startsWith("Bearer ")) {
-            throw new IllegalArgumentException("토큰이 존재하지 않습니다.");
+            throw new IllegalArgumentException("Token is missing.");
         }
         String token = header.substring(7);
 

@@ -22,12 +22,12 @@ import java.security.Principal;
 @RequestMapping("/api/trustay/members")
 @RequiredArgsConstructor
 @Slf4j
-@Tag(name = "Member API", description = "회원 가입 및 프로필 관리")
+@Tag(name = "Member API", description = "Sign up and profile management.")
 public class MemberController {
 
     private final MemberService memberService;
 
-    @Operation(summary = "회원가입")
+    @Operation(summary = "Sign up.")
     @PostMapping("/signup")
     public ResponseEntity<DataResponse<Void>> signup(@Valid @RequestBody SignupReq requestDto) {
         try {
@@ -38,7 +38,7 @@ public class MemberController {
         }
     }
 
-    @Operation(summary = "내 프로필 조회")
+    @Operation(summary = "Get my profile.")
     @GetMapping("/profile")
     public ResponseEntity<DataResponse<ProfileRes>> getProfile(Principal principal) {
         String email = principal.getName();
@@ -46,7 +46,7 @@ public class MemberController {
         return ResponseEntity.ok(DataResponse.of(ResponseCode.SUCCESS, response));
     }
 
-    @Operation(summary = "내 프로필 정보 수정 (전화번호, 생일, 계좌)")
+    @Operation(summary = "Update my profile (phone, birthday, account).")
     @PatchMapping("/profile")
     public ResponseEntity<DataResponse<Void>> updateProfile(
             Principal principal,
@@ -57,7 +57,7 @@ public class MemberController {
         return ResponseEntity.ok(DataResponse.of(ResponseCode.SUCCESS));
     }
 
-    @Operation(summary = "프로필 이미지 업로드")
+    @Operation(summary = "Upload a profile image.")
     @PostMapping(value = "/profile/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<DataResponse<Void>> updateProfileImage(
             Principal principal,

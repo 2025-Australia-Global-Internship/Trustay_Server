@@ -28,13 +28,13 @@ import java.util.List;
 @RequestMapping("/api/trustay/payments")
 @RequiredArgsConstructor
 @Slf4j
-@Tag(name = "Payment API", description = "토스 테스트 결제, 월세 준비, N빵(더치페이), 자동이체")
+@Tag(name = "Payment API", description = "Toss test payments, rent preparation, split payments (dutch pay), and auto-transfers.")
 public class PaymentController {
 
     private final PaymentService paymentService;
     private final AutoTransferService autoTransferService;
 
-    @Operation(summary = "토스 결제위젯용 클라이언트 키 조회")
+    @Operation(summary = "Get the Toss payment widget client key.")
     @GetMapping("/toss/client-config")
     public ResponseEntity<DataResponse<TossClientConfigRes>> tossClientConfig() {
         try {
@@ -45,7 +45,7 @@ public class PaymentController {
         }
     }
 
-    @Operation(summary = "월세 결제 준비 (orderId 발급, 집주인 계좌 안내)")
+    @Operation(summary = "Prepare a rent payment (issues an orderId and returns the host's account info).")
     @PostMapping("/rent/prepare")
     public ResponseEntity<DataResponse<PaymentPrepareRes>> prepareRent(
             Principal principal,
@@ -58,7 +58,7 @@ public class PaymentController {
         }
     }
 
-    @Operation(summary = "N빵 생성 (참여자별 금액·orderId 분배)")
+    @Operation(summary = "Create a split payment (distributes amount and orderId per participant).")
     @PostMapping("/dutch")
     public ResponseEntity<DataResponse<DutchPayCreateRes>> createDutch(
             Principal principal,
@@ -71,7 +71,7 @@ public class PaymentController {
         }
     }
 
-    @Operation(summary = "토스 결제 승인 (테스트 키면 테스트만)")
+    @Operation(summary = "Confirm a Toss payment (test only when using test keys).")
     @PostMapping("/confirm")
     public ResponseEntity<DataResponse<PaymentConfirmRes>> confirm(
             Principal principal,
@@ -88,7 +88,7 @@ public class PaymentController {
         }
     }
 
-    @Operation(summary = "내 미완료(PENDING) 결제 목록")
+    @Operation(summary = "List my pending payments.")
     @GetMapping("/me/pending")
     public ResponseEntity<DataResponse<List<PendingPaymentRes>>> myPending(Principal principal) {
         try {
@@ -99,7 +99,7 @@ public class PaymentController {
         }
     }
 
-    @Operation(summary = "내 결제 이력 조회")
+    @Operation(summary = "Get my payment history.")
     @GetMapping("/me/history")
     public ResponseEntity<DataResponse<List<PaymentHistoryRes>>> myHistory(
             Principal principal,
@@ -130,8 +130,8 @@ public class PaymentController {
     // 자동이체 스케줄 관리
     // =========================================================================
 
-    @Operation(summary = "자동이체 등록",
-            description = "매월 dayOfMonth 일에 Payment(PENDING)이 자동 생성되고 알림이 발송됩니다. 실제 결제 승인은 사용자가 진행해야 합니다.")
+    @Operation(summary = "Create an auto-transfer schedule.",
+            description = "A pending payment is auto-created and a notification is sent on the configured day each month. The user still needs to approve the actual payment.")
     @PostMapping("/auto-transfer")
     public ResponseEntity<DataResponse<AutoTransferRes>> createAutoTransfer(
             Principal principal,
@@ -146,7 +146,7 @@ public class PaymentController {
         }
     }
 
-    @Operation(summary = "내 자동이체 스케줄 목록")
+    @Operation(summary = "List my auto-transfer schedules.")
     @GetMapping("/auto-transfer/me")
     public ResponseEntity<DataResponse<List<AutoTransferRes>>> listMyAutoTransfers(Principal principal) {
         try {
@@ -157,7 +157,7 @@ public class PaymentController {
         }
     }
 
-    @Operation(summary = "자동이체 스케줄 수정")
+    @Operation(summary = "Update an auto-transfer schedule.")
     @PutMapping("/auto-transfer/{id}")
     public ResponseEntity<DataResponse<AutoTransferRes>> updateAutoTransfer(
             Principal principal,
@@ -175,7 +175,7 @@ public class PaymentController {
         }
     }
 
-    @Operation(summary = "자동이체 스케줄 취소 (active=false)")
+    @Operation(summary = "Cancel an auto-transfer schedule (sets active=false).")
     @DeleteMapping("/auto-transfer/{id}")
     public ResponseEntity<DataResponse<Void>> cancelAutoTransfer(
             Principal principal,

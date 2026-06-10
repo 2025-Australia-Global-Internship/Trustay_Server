@@ -26,13 +26,13 @@ import java.security.Principal;
 @RequestMapping("/api/trustay/reviews")
 @RequiredArgsConstructor
 @Slf4j
-@Tag(name = "Review API", description = "쉐어하우스 매물 리뷰/평점")
+@Tag(name = "Review API", description = "Sharehouse listing reviews and ratings.")
 public class ReviewController {
 
     private final ReviewService reviewService;
 
-    @Operation(summary = "리뷰 작성",
-            description = "해당 매물의 거주 이력(Contract ACTIVE 또는 EXPIRED)이 있는 사용자만 작성 가능, 한 매물에 1회만 작성 가능합니다.")
+    @Operation(summary = "Create a review.",
+            description = "Only users with a residency history (Contract status ACTIVE or EXPIRED) for the listing can write a review, and only one review per listing is allowed.")
     @PostMapping
     public ResponseEntity<DataResponse<ReviewRes>> createReview(
             Principal principal,
@@ -47,7 +47,7 @@ public class ReviewController {
         }
     }
 
-    @Operation(summary = "리뷰 수정", description = "본인이 작성한 리뷰만 수정 가능합니다.")
+    @Operation(summary = "Update a review.", description = "You can only edit reviews you wrote yourself.")
     @PutMapping("/{reviewId}")
     public ResponseEntity<DataResponse<ReviewRes>> updateReview(
             Principal principal,
@@ -63,7 +63,7 @@ public class ReviewController {
         }
     }
 
-    @Operation(summary = "리뷰 삭제", description = "본인이 작성한 리뷰만 삭제 가능합니다.")
+    @Operation(summary = "Delete a review.", description = "You can only delete reviews you wrote yourself.")
     @DeleteMapping("/{reviewId}")
     public ResponseEntity<DataResponse<Void>> deleteReview(
             Principal principal,
@@ -78,7 +78,7 @@ public class ReviewController {
         }
     }
 
-    @Operation(summary = "매물 리뷰 목록 조회", description = "특정 쉐어하우스에 대한 리뷰 목록 (최신순, 페이징)")
+    @Operation(summary = "List reviews for a listing.", description = "Returns reviews for a specific sharehouse (most recent first, paginated).")
     @GetMapping("/house/{houseId}")
     public ResponseEntity<DataResponse<PageResponse<ReviewRes>>> getHouseReviews(
             @PathVariable Long houseId,
@@ -91,7 +91,7 @@ public class ReviewController {
         }
     }
 
-    @Operation(summary = "매물 평점 요약", description = "특정 쉐어하우스의 평균 평점과 리뷰 수")
+    @Operation(summary = "Get rating summary for a listing.", description = "Returns the average rating and review count for a specific sharehouse.")
     @GetMapping("/house/{houseId}/summary")
     public ResponseEntity<DataResponse<ReviewService.RatingSummary>> getHouseRatingSummary(
             @PathVariable Long houseId) {
@@ -99,7 +99,7 @@ public class ReviewController {
         return ResponseEntity.ok(DataResponse.of(ResponseCode.SUCCESS, summary));
     }
 
-    @Operation(summary = "내가 작성한 리뷰 목록")
+    @Operation(summary = "List my reviews.")
     @GetMapping("/me")
     public ResponseEntity<DataResponse<PageResponse<ReviewRes>>> getMyReviews(
             Principal principal,

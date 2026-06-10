@@ -49,6 +49,6 @@ public class Comment extends BaseEntity {
 
     public void softDelete() {
         this.isDeleted = true;
-        this.content = "(삭제된 댓글입니다.)";
+        this.content = "(This comment was deleted.)";
     }
 }

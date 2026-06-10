@@ -28,7 +28,7 @@ public class TossPaymentsClient {
      */
     public JsonNode confirmPayment(String paymentKey, String orderId, long amount) {
         if (props.getSecretKey() == null || props.getSecretKey().isBlank()) {
-            throw new IllegalStateException("toss.payments.secret-key 가 설정되지 않았습니다. application-local.yaml 을 확인하세요.");
+            throw new IllegalStateException("toss.payments.secret-key is not configured. Please check application-local.yaml.");
         }
         String encoded = Base64.getEncoder().encodeToString(
                 (props.getSecretKey() + ":").getBytes(StandardCharsets.UTF_8));

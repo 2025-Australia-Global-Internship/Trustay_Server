@@ -17,21 +17,21 @@ public class DutchPayCreateReq {
 
     @NotNull
     @Min(1)
-    @Schema(description = "N빵 총액(원)")
+    @Schema(description = "Total amount to split (KRW).")
     private Long totalAmount;
 
     @NotNull
     @NotEmpty
-    @Schema(description = "N빵 참여 회원 ID 목록(중복 없이). 정산 받는 사람도 포함합니다.")
+    @Schema(description = "List of member IDs participating in the split (no duplicates). Must include the payee as well.")
     private List<Long> memberIds;
 
     @NotNull
-    @Schema(description = "실제 송금을 받을 사람(동료들이 보낼 계좌 주인). memberIds 에 반드시 포함")
+    @Schema(description = "Member who will receive the funds (account owner). Must be included in memberIds.")
     private Long payeeMemberId;
 
-    @Schema(description = "메모/제목")
+    @Schema(description = "Memo or title.")
     private String title;
 
-    @Schema(description = "선택: 연관 계약 ID")
+    @Schema(description = "Optional: related contract ID.")
     private Long contractId;
 }

@@ -93,9 +93,9 @@ public class NotificationService {
     public void markAsRead(String email, Long notificationId) {
         Member me = findMember(email);
         Notification n = notificationRepository.findById(notificationId)
-                .orElseThrow(() -> new EntityNotFoundException("알림을 찾을 수 없습니다."));
+                .orElseThrow(() -> new EntityNotFoundException("Notification not found."));
         if (!n.getRecipient().getId().equals(me.getId())) {
-            throw new IllegalStateException("본인의 알림만 처리할 수 있습니다.");
+            throw new IllegalStateException("You can only manage your own notifications.");
         }
         if (Boolean.FALSE.equals(n.getIsRead())) {
             n.markAsRead();
@@ -112,9 +112,9 @@ public class NotificationService {
     public void delete(String email, Long notificationId) {
         Member me = findMember(email);
         Notification n = notificationRepository.findById(notificationId)
-                .orElseThrow(() -> new EntityNotFoundException("알림을 찾을 수 없습니다."));
+                .orElseThrow(() -> new EntityNotFoundException("Notification not found."));
         if (!n.getRecipient().getId().equals(me.getId())) {
-            throw new IllegalStateException("본인의 알림만 처리할 수 있습니다.");
+            throw new IllegalStateException("You can only manage your own notifications.");
         }
         notificationRepository.delete(n);
     }
@@ -143,7 +143,7 @@ public class NotificationService {
         Member me = findMember(email);
         fcmTokenRepository.findByToken(token).ifPresent(t -> {
             if (!t.getMember().getId().equals(me.getId())) {
-                throw new IllegalStateException("본인의 토큰만 삭제할 수 있습니다.");
+                throw new IllegalStateException("You can only delete your own tokens.");
             }
             fcmTokenRepository.delete(t);
         });
@@ -151,6 +151,6 @@ public class NotificationService {
 
     private Member findMember(String email) {
         return memberRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Member not found."));
     }
 }

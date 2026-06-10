@@ -31,10 +31,10 @@ public class ChatMessageService {
     // 메시지 저장 (보내기)
     public ChatMessageRes saveMessage(ChatMessageReq req) {
         ChatRoom room = chatRoomRepository.findById(req.getRoomId())
-                .orElseThrow(() -> new EntityNotFoundException("채팅방이 존재하지 않습니다."));
+                .orElseThrow(() -> new EntityNotFoundException("Chat room not found."));
 
         Member sender = memberRepository.findById(req.getSenderId())
-                .orElseThrow(() -> new EntityNotFoundException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new EntityNotFoundException("User not found."));
 
         ChatMessage chatMessage = ChatMessage.builder()
                 .chatRoom(room)
@@ -55,7 +55,7 @@ public class ChatMessageService {
                 counterparty,
                 sender.getId(),
                 NotificationType.CHAT,
-                sender.getName() + "님의 새 메시지",
+                "New message from " + sender.getName(),
                 preview,
                 "/chat/room/" + room.getId()
         );
@@ -69,9 +69,9 @@ public class ChatMessageService {
     public ChatMessageRes saveContractScanMessage(Long roomId, Long senderId, String pdfUrl,
                                                   PaperContractDocument paperContractDocument) {
         ChatRoom room = chatRoomRepository.findById(roomId)
-                .orElseThrow(() -> new EntityNotFoundException("채팅방이 존재하지 않습니다."));
+                .orElseThrow(() -> new EntityNotFoundException("Chat room not found."));
         Member sender = memberRepository.findById(senderId)
-                .orElseThrow(() -> new EntityNotFoundException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new EntityNotFoundException("User not found."));
 
         ChatMessage chatMessage = ChatMessage.builder()
                 .chatRoom(room)

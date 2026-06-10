@@ -37,7 +37,7 @@ public class CommunityService {
     @Transactional
     public CommunityRes createCommunity(String userEmail, CommunityReq req) {
         Member member = memberRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new IllegalArgumentException("회원 정보를 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Member not found."));
 
         // 1. [수정] 입력받은 URL 문자열을 Image 엔티티로 변환하여 저장
         Image communityImage = null;
@@ -94,7 +94,7 @@ public class CommunityService {
      */
     public List<CommunityRes> getMyCommunities(String userEmail) {
         Member member = memberRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new IllegalArgumentException("회원 정보를 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Member not found."));
 
         List<Community> communities = communityRepository.findByOwnerId(member.getId());
         return communities.stream()
@@ -107,7 +107,7 @@ public class CommunityService {
      */
     public List<CommunityRes> getJoinedCommunities(String userEmail) {
         Member member = memberRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new IllegalArgumentException("회원 정보를 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Member not found."));
 
         List<CommunityMember> memberships = communityMemberRepository.findByMemberId(member.getId());
         return memberships.stream()
@@ -120,7 +120,7 @@ public class CommunityService {
      */
     public CommunityRes getCommunityDetail(Long communityId) {
         Community community = communityRepository.findById(communityId)
-                .orElseThrow(() -> new IllegalArgumentException("커뮤니티를 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Community not found."));
         return CommunityRes.from(community);
     }
 
@@ -130,14 +130,14 @@ public class CommunityService {
     @Transactional
     public void joinCommunity(String userEmail, Long communityId) {
         Member member = memberRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new IllegalArgumentException("회원 정보를 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Member not found."));
 
         Community community = communityRepository.findById(communityId)
-                .orElseThrow(() -> new IllegalArgumentException("커뮤니티를 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Community not found."));
 
         // 이미 가입했는지 확인
         if (communityMemberRepository.findByCommunityIdAndMemberId(communityId, member.getId()).isPresent()) {
-            throw new IllegalStateException("이미 가입한 커뮤니티입니다.");
+            throw new IllegalStateException("You've already joined this community.");
         }
 
         CommunityMember communityMember = CommunityMember.builder()
@@ -154,18 +154,18 @@ public class CommunityService {
     @Transactional
     public void leaveCommunity(String userEmail, Long communityId) {
         Member member = memberRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new IllegalArgumentException("회원 정보를 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Member not found."));
 
         Community community = communityRepository.findById(communityId)
-                .orElseThrow(() -> new IllegalArgumentException("커뮤니티를 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Community not found."));
 
         CommunityMember communityMember = communityMemberRepository
                 .findByCommunityIdAndMemberId(communityId, member.getId())
-                .orElseThrow(() -> new IllegalArgumentException("가입한 커뮤니티가 아닙니다."));
+                .orElseThrow(() -> new IllegalArgumentException("You have not joined this community."));
 
         // 소유자는 탈퇴 불가
         if (community.getOwner().getId().equals(member.getId())) {
-            throw new IllegalStateException("커뮤니티 소유자는 탈퇴할 수 없습니다.");
+            throw new IllegalStateException("The community owner cannot leave the community.");
         }
 
         communityMemberRepository.delete(communityMember);
@@ -178,14 +178,14 @@ public class CommunityService {
     @Transactional
     public void updateCommunity(String userEmail, Long communityId, CommunityReq req) {
         Member member = memberRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new IllegalArgumentException("회원 정보를 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Member not found."));
 
         Community community = communityRepository.findById(communityId)
-                .orElseThrow(() -> new IllegalArgumentException("커뮤니티를 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Community not found."));
 
         // 소유자 확인
         if (!community.getOwner().getId().equals(member.getId())) {
-            throw new IllegalStateException("수정 권한이 없습니다.");
+            throw new IllegalStateException("You don't have permission to edit this community.");
         }
 
         Image image = imageRepository.save(Image.builder()
@@ -202,14 +202,14 @@ public class CommunityService {
     @Transactional
     public void deleteCommunity(String userEmail, Long communityId) {
         Member member = memberRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new IllegalArgumentException("회원 정보를 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Member not found."));
 
         Community community = communityRepository.findById(communityId)
-                .orElseThrow(() -> new IllegalArgumentException("커뮤니티를 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Community not found."));
 
         // 소유자 확인
         if (!community.getOwner().getId().equals(member.getId())) {
-            throw new IllegalStateException("삭제 권한이 없습니다.");
+            throw new IllegalStateException("You don't have permission to delete this community.");
         }
 
         communityRepository.delete(community);

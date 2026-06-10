@@ -27,7 +27,7 @@ public class FirebaseConfig {
             }
 
         } catch (Exception e) {
-            throw new IllegalStateException("Firebase 초기화 실패", e);
+            throw new IllegalStateException("Firebase initialization failed.", e);
         }
     }
 }

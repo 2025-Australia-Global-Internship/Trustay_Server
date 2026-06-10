@@ -23,7 +23,7 @@ public class TesseractOcrService {
     public String recognize(BufferedImage image) throws TesseractException {
         if (!StringUtils.hasText(ocrProperties.getTesseractDataPath())) {
             throw new IllegalStateException(
-                    "pkg.ocr.tesseract-data-path 가 설정되지 않았습니다. Tesseract 설치 경로( tessdata 의 상위 폴더 )를 application yaml에 지정하세요.");
+                    "pkg.ocr.tesseract-data-path is not configured. Please set the Tesseract install path (the parent folder of tessdata) in application.yaml.");
         }
 
         BufferedImage rgb = toRgb(image);

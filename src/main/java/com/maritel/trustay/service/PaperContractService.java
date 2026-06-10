@@ -55,16 +55,16 @@ public class PaperContractService {
     public PaperContractScanRes scanAndStore(Long roomId, Long memberId, List<MultipartFile> images)
             throws BadRequestException {
         if (CollectionUtils.isEmpty(images)) {
-            throw new BadRequestException("이미지가 1장 이상 필요합니다.");
+            throw new BadRequestException("Please upload at least one image.");
         }
 
         ChatRoom room = chatRoomRepository.findById(roomId)
-                .orElseThrow(() -> new EntityNotFoundException("채팅방을 찾을 수 없습니다."));
+                .orElseThrow(() -> new EntityNotFoundException("Chat room not found."));
         Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new EntityNotFoundException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new EntityNotFoundException("User not found."));
 
         if (!room.getSender().getId().equals(memberId) && !room.getReceiver().getId().equals(memberId)) {
-            throw new IllegalArgumentException("해당 채팅방의 참여자가 아닙니다.");
+            throw new IllegalArgumentException("You are not a participant in this chat room.");
         }
 
         List<BufferedImage> bufferedImages = new ArrayList<>();
@@ -78,10 +78,10 @@ public class PaperContractService {
             try {
                 bi = ImageIO.read(file.getInputStream());
             } catch (IOException e) {
-                throw new IllegalStateException("이미지를 읽는 중 오류: " + file.getOriginalFilename(), e);
+                throw new IllegalStateException("Couldn't read image: " + file.getOriginalFilename(), e);
             }
             if (bi == null) {
-                throw new BadRequestException("이미지를 읽을 수 없는 파일이 포함되어 있습니다: " + file.getOriginalFilename());
+                throw new BadRequestException("One of the files isn't a readable image: " + file.getOriginalFilename());
             }
             bufferedImages.add(bi);
 
@@ -90,12 +90,12 @@ public class PaperContractService {
                 imageUrls.add(fileService.uploadContractScanImage(file));
             } catch (MalformedURLException e) {
                 log.error("URL 생성 오류", e);
-                throw new IllegalStateException("파일 업로드 중 URL 생성 오류가 발생했습니다: " + file.getOriginalFilename(), e);
+                throw new IllegalStateException("Failed to build the file URL during upload: " + file.getOriginalFilename(), e);
             }
         }
 
         if (bufferedImages.isEmpty()) {
-            throw new BadRequestException("유효한 이미지가 없습니다.");
+            throw new BadRequestException("No valid images were provided.");
         }
 
         String ocrText;
@@ -103,7 +103,7 @@ public class PaperContractService {
             ocrText = tesseractOcrService.recognizeAll(bufferedImages);
         } catch (TesseractException e) {
             log.error("Tesseract OCR 실패", e);
-            throw new IllegalStateException("OCR 처리에 실패했습니다. Tesseract 설치 및 pkg.ocr.tesseract-data-path, 언어 데이터(kor, eng)를 확인하세요.", e);
+            throw new IllegalStateException("OCR failed. Please check your Tesseract install, pkg.ocr.tesseract-data-path, and language data (kor, eng).", e);
         }
 
         byte[] pdfBytes;
@@ -111,7 +111,7 @@ public class PaperContractService {
             pdfBytes = contractScanPdfService.buildPdfFromImages(bufferedImages);
         } catch (IOException e) {
             log.error("PDF 생성 실패", e);
-            throw new IllegalStateException("PDF 생성에 실패했습니다.", e);
+            throw new IllegalStateException("Failed to generate the PDF.", e);
         }
 
         String pdfUrl = fileService.saveContractPdf(pdfBytes);
@@ -120,7 +120,7 @@ public class PaperContractService {
         try {
             urlsJson = objectMapper.writeValueAsString(imageUrls);
         } catch (JsonProcessingException e) {
-            throw new IllegalStateException("메타데이터 직렬화 실패", e);
+            throw new IllegalStateException("Failed to serialize metadata.", e);
         }
 
         PaperContractDocument doc = PaperContractDocument.builder()
@@ -148,10 +148,10 @@ public class PaperContractService {
     @Transactional(readOnly = true)
     public PaperContractDocumentRes getDocument(Long documentId, Long memberId) {
         PaperContractDocument doc = paperContractDocumentRepository.findById(documentId)
-                .orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
+                .orElseThrow(() -> new EntityNotFoundException("Document not found."));
         ChatRoom room = doc.getChatRoom();
         if (!room.getSender().getId().equals(memberId) && !room.getReceiver().getId().equals(memberId)) {
-            throw new IllegalArgumentException("이 문서를 조회할 권한이 없습니다.");
+            throw new IllegalArgumentException("You don't have permission to view this document.");
         }
 
         List<String> urls = parseSourceUrls(doc.getSourceImageUrlsJson());
@@ -171,7 +171,7 @@ public class PaperContractService {
     @Transactional(readOnly = true)
     public List<PaperContractDocumentRes> getMyDocuments(String memberEmail) {
         Member member = memberRepository.findByEmail(memberEmail)
-                .orElseThrow(() -> new EntityNotFoundException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new EntityNotFoundException("User not found."));
 
         return paperContractDocumentRepository.findByUploadedBy_IdOrderByRegTimeDesc(member.getId())
                 .stream()

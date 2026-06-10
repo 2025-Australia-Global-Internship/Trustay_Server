@@ -32,7 +32,7 @@ public class PaperContractController {
      * @param memberId 업로드하는 회원 ID (채팅 참여자여야 함)
      * @param images   multipart 이름 {@code images} — 여러 장 가능
      */
-    @Operation(summary = "종이 계약서 스캔 업로드")
+    @Operation(summary = "Upload paper contract scans.")
     @PostMapping(value = "/scan", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<DataResponse<PaperContractScanRes>> scan(
             @RequestParam Long roomId,
@@ -43,7 +43,7 @@ public class PaperContractController {
         return ResponseEntity.ok(DataResponse.of(ResponseCode.SUCCESS, res));
     }
 
-    @Operation(summary = "종이 계약서 문서 조회")
+    @Operation(summary = "Get a paper contract document.")
     @GetMapping("/{documentId}")
     public ResponseEntity<DataResponse<PaperContractDocumentRes>> getDocument(
             @PathVariable Long documentId,
@@ -53,7 +53,7 @@ public class PaperContractController {
         return ResponseEntity.ok(DataResponse.of(ResponseCode.SUCCESS, res));
     }
 
-    @Operation(summary = "내 계약서 문서 목록 조회")
+    @Operation(summary = "List my paper contract documents.")
     @GetMapping("/me")
     public ResponseEntity<DataResponse<List<PaperContractDocumentRes>>> getMyDocuments(Principal principal) {
         List<PaperContractDocumentRes> res = paperContractService.getMyDocuments(principal.getName());

@@ -37,7 +37,7 @@ public class FileService {
 
     public String uploadFile(MultipartFile file) throws MalformedURLException, BadRequestException {
         if (file == null) {
-            throw new BadRequestException("파일이 제공되지 않았습니다.");
+            throw new BadRequestException("Please attach a file.");
         }
 
         String fileExt = resolveImageExtension(file);
@@ -95,7 +95,7 @@ public class FileService {
 
         } catch (IOException e) {
             log.error("파일 업로드 중 오류 발생", e);
-            throw new RuntimeException("파일 업로드 실패: " + e.getLocalizedMessage());
+            throw new RuntimeException("File upload failed: " + e.getLocalizedMessage());
         }
 
         // URL 생성 (File.separator 대신 "/" 사용)
@@ -109,13 +109,13 @@ public class FileService {
      */
     public String uploadContractScanImage(MultipartFile file) throws MalformedURLException, BadRequestException {
         if (file == null || file.isEmpty()) {
-            throw new BadRequestException("파일이 제공되지 않았습니다.");
+            throw new BadRequestException("Please attach a file.");
         }
         String fileExt = resolveImageExtension(file);
         if (!(fileExt.equals(".jpg") || fileExt.equals(".jpeg") || fileExt.equals(".png")
                 || fileExt.equals(".heic") || fileExt.equals(".heif"))) {
             log.warn("계약 스캔에 지원하지 않는 형식: {}", fileExt);
-            throw new BadRequestException("지원하지 않는 이미지 형식입니다.");
+            throw new BadRequestException("Unsupported image format.");
         }
         String fileName = getNewFileName(fileExt);
         return uploadLocalUnderPrefix("contracts/scans", fileName, file);
@@ -126,7 +126,7 @@ public class FileService {
      */
     public String saveContractPdf(byte[] pdfBytes) {
         if (pdfBytes == null || pdfBytes.length == 0) {
-            throw new IllegalArgumentException("PDF 데이터가 비어 있습니다.");
+            throw new IllegalArgumentException("PDF data is empty.");
         }
         LocalDate nowDate = LocalDate.now();
         String datePath = String.format("%04d/%02d/%02d",
@@ -143,7 +143,7 @@ public class FileService {
             Files.write(outFile.toPath(), pdfBytes);
         } catch (IOException e) {
             log.error("PDF 저장 실패", e);
-            throw new RuntimeException("PDF 저장 실패: " + e.getLocalizedMessage());
+            throw new RuntimeException("Failed to save PDF: " + e.getLocalizedMessage());
         }
         return String.format("http://%s:8080/images/%s/%s", serverDomain, relativeDir.replace("\\", "/"), fileName);
     }
@@ -170,7 +170,7 @@ public class FileService {
             }
         } catch (IOException e) {
             log.error("파일 업로드 중 오류", e);
-            throw new RuntimeException("파일 업로드 실패: " + e.getLocalizedMessage());
+            throw new RuntimeException("File upload failed: " + e.getLocalizedMessage());
         }
 
         return String.format("http://%s:8080/images/%s/%s",

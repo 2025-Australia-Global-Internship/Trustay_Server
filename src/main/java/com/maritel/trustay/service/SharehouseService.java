@@ -59,7 +59,7 @@ public class SharehouseService {
      */
     public SharehouseResultRes getMySharehouseDetail(@PathVariable Long houseId) {
         Sharehouse sharehouse = sharehouseRepository.findById(houseId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 쉐어하우스가 존재하지 않습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Sharehouse not found."));
 
         // [수정] 이미지 리스트 조회 후 함께 전달
         List<SharehouseImage> images = sharehouseImageRepository.findBySharehouseId(houseId);
@@ -105,7 +105,7 @@ public class SharehouseService {
     @Transactional
     public SharehouseRes registerSharehouse(String userEmail, SharehouseReq req) {
         Member host = memberRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new IllegalArgumentException("사용자 정보를 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("User not found."));
 
         // 매물 등록 시 TENANT 권한만 가진 사용자는 HOST 권한도 함께 부여
         if (host.getProfile() != null) {
@@ -174,13 +174,13 @@ public class SharehouseService {
     @Transactional
     public void updateSharehouse(Long houseId, String email, SharehouseUpdateReq req) {
         Sharehouse sharehouse = sharehouseRepository.findById(houseId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 쉐어하우스가 존재하지 않습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Sharehouse not found."));
 
         Member member = memberRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("사용자 정보를 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("User not found."));
 
         if (!sharehouse.getHost().getEmail().equals(email) && !isAdmin(member)) {
-            throw new IllegalStateException("수정 권한이 없습니다.");
+            throw new IllegalStateException("You don't have permission to edit this listing.");
         }
 
         sharehouse.updateSharehouse(
@@ -198,13 +198,13 @@ public class SharehouseService {
     @Transactional
     public void deleteSharehouse(Long houseId, String email) {
         Sharehouse sharehouse = sharehouseRepository.findById(houseId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 쉐어하우스가 존재하지 않습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Sharehouse not found."));
 
         Member member = memberRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("사용자 정보를 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("User not found."));
 
         if (!sharehouse.getHost().getEmail().equals(email) && !this.isAdmin(member)) {
-            throw new IllegalStateException("삭제 권한이 없습니다.");
+            throw new IllegalStateException("You don't have permission to delete this listing.");
         }
 
         sharehouseRepository.delete(sharehouse);
@@ -218,32 +218,32 @@ public class SharehouseService {
 
         // 1. 요청자(관리자) 조회
         Member admin = memberRepository.findByEmail(adminEmail)
-                .orElseThrow(() -> new IllegalArgumentException("사용자 정보를 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("User not found."));
 
         // 2. 권한 확인 (Profile 테이블의 Role 확인)
         // Profile이 없거나, Role이 ADMIN이 아니면 예외 발생
         log.info(admin.getEmail());
         if (admin.getProfile() == null || !isAdmin(admin)) {
-            throw new IllegalStateException("관리자 권한이 없습니다.");
+            throw new IllegalStateException("Admin permission is required.");
         }
 
         // 3. 매물 조회 및 상태 변경
         Sharehouse sharehouse = sharehouseRepository.findById(houseId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 쉐어하우스가 존재하지 않습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Sharehouse not found."));
 
         sharehouse.changeApprovalStatus(status);
 
         // 4. 집주인(host)에게 승인/거절 알림 발행
         String title = status == ApprovalStatus.ACTIVE
-                ? "매물이 승인되었습니다."
+                ? "Your listing has been approved."
                 : status == ApprovalStatus.REJECTED
-                    ? "매물이 거절되었습니다."
-                    : "매물 상태가 변경되었습니다.";
+                    ? "Your listing has been rejected."
+                    : "Your listing status has changed.";
         notificationService.notify(
                 sharehouse.getHost(),
                 NotificationType.APPROVAL,
                 title,
-                String.format("[%s] 매물의 상태가 %s(으)로 변경되었습니다.",
+                String.format("Your listing \"%s\" is now %s.",
                         sharehouse.getTitle(), status.name()),
                 "/sharehouse/" + sharehouse.getId()
         );
@@ -259,7 +259,7 @@ public class SharehouseService {
         sharehouseRepository.updateViewCount(houseId);
 
         Sharehouse sharehouse = sharehouseRepository.findById(houseId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 쉐어하우스가 존재하지 않습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Sharehouse not found."));
 
         // [추가] 해당 쉐어하우스의 이미지 리스트 조회
         List<SharehouseImage> images = sharehouseImageRepository.findBySharehouseId(houseId);
@@ -288,9 +288,9 @@ public class SharehouseService {
     @Transactional
     public WishToggleRes toggleWish(String userEmail, Long houseId) {
         Member member = memberRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new IllegalArgumentException("사용자 정보를 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("User not found."));
         Sharehouse sharehouse = sharehouseRepository.findById(houseId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 쉐어하우스가 존재하지 않습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Sharehouse not found."));
 
         var existing = sharehouseWishRepository.findByMember_IdAndSharehouse_Id(member.getId(), sharehouse.getId());
         if (existing.isPresent()) {
@@ -315,7 +315,7 @@ public class SharehouseService {
     @Transactional(readOnly = true)
     public Page<SharehouseRes> getMyWishlist(String userEmail, Pageable pageable) {
         Member member = memberRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new IllegalArgumentException("사용자 정보를 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("User not found."));
         Page<SharehouseWish> wishes = sharehouseWishRepository.findByMember_IdOrderByRegTimeDesc(member.getId(), pageable);
         Map<Long, double[]> ratingMap = aggregateRatings(
                 wishes.map(w -> w.getSharehouse().getId()).toList());
@@ -330,7 +330,7 @@ public class SharehouseService {
     @Transactional(readOnly = true)
     public SharehouseRes getMyCurrentSharehouse(String userEmail) {
         Member member = memberRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new IllegalArgumentException("사용자 정보를 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("User not found."));
 
         List<Contract> contracts = contractRepository.findByTenantEmailAndStatusOrderByRegTimeDesc(
                 member.getEmail(),
@@ -339,7 +339,7 @@ public class SharehouseService {
 
         Contract currentContract = contracts.stream()
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("현재 거주 중인 매물이 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("You don't have a current residence."));
 
         Sharehouse sharehouse = currentContract.getSharehouse();
         List<SharehouseImage> images = sharehouseImageRepository.findBySharehouseId(sharehouse.getId());

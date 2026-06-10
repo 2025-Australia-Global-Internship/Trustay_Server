@@ -32,16 +32,16 @@ public class ChatRoomService {
     // 1. 채팅방 생성 (이미 있으면 기존 방 반환)
     public Long createOrGetRoom(ChatRoomCreateReq req) {
         Sharehouse house = sharehouseRepository.findById(req.getHouseId())
-                .orElseThrow(() -> new EntityNotFoundException("매물을 찾을 수 없습니다."));
+                .orElseThrow(() -> new EntityNotFoundException("Sharehouse not found."));
 
         Member sender = memberRepository.findById(req.getSenderId())
-                .orElseThrow(() -> new EntityNotFoundException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new EntityNotFoundException("User not found."));
 
         Member host = house.getHost(); // 매물 주인
 
         // 본인 매물에 본인이 채팅하는 것 방지 (선택 사항)
         if (sender.getId().equals(host.getId())) {
-            throw new IllegalArgumentException("자신의 매물에는 채팅을 보낼 수 없습니다.");
+            throw new IllegalArgumentException("You can't start a chat on your own listing.");
         }
 
         // 이미 생성된 방이 있는지 확인
@@ -87,7 +87,7 @@ public class ChatRoomService {
                     .houseId(room.getSharehouse().getId())
                     .houseTitle(room.getSharehouse().getTitle())
                     .otherMemberName(other.getName())
-                    .lastMessage(lastMsg != null ? lastMsg.getMessage() : "대화 내용이 없습니다.")
+                    .lastMessage(lastMsg != null ? lastMsg.getMessage() : "No messages yet.")
                     .lastSenderName(lastMsg != null ? lastMsg.getSender().getName() : "")
                     .lastMessageTime(lastMsg != null ? lastMsg.getRegTime().toString() : "")
                     .profileImageUrl(otherProfileImageUrl)
@@ -98,13 +98,13 @@ public class ChatRoomService {
     // 3. 채팅방 나가기
     public void leaveRoom(Long roomId, Long memberId) {
         ChatRoom room = chatRoomRepository.findById(roomId)
-                .orElseThrow(() -> new EntityNotFoundException("채팅방을 찾을 수 없습니다."));
+                .orElseThrow(() -> new EntityNotFoundException("Chat room not found."));
         if (room.getSender().getId().equals(memberId)) {
             room.leaveBySender();
         } else if (room.getReceiver().getId().equals(memberId)) {
             room.leaveByReceiver();
         } else {
-            throw new IllegalArgumentException("해당 채팅방의 참여자가 아닙니다.");
+            throw new IllegalArgumentException("You are not a participant in this chat room.");
         }
     }
 }

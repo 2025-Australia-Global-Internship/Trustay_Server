@@ -38,7 +38,7 @@ import java.util.UUID;
 @Transactional(readOnly = true)
 public class AutoTransferService {
 
-    private static final String ACCOUNT_NOT_SET = "(계좌 미등록) 프로필에 정산 계좌를 입력해 주세요.";
+    private static final String ACCOUNT_NOT_SET = "(No account registered) Please add a settlement account to your profile.";
 
     private final AutoTransferScheduleRepository scheduleRepository;
     private final MemberRepository memberRepository;
@@ -53,20 +53,20 @@ public class AutoTransferService {
     @Transactional
     public AutoTransferRes create(String payerEmail, AutoTransferReq req) {
         if (req.getType() != PaymentType.RENT && req.getType() != PaymentType.UTILITY) {
-            throw new IllegalArgumentException("자동이체는 RENT 또는 UTILITY 타입만 지원합니다.");
+            throw new IllegalArgumentException("Auto-transfer only supports RENT or UTILITY types.");
         }
         Member payer = findMember(payerEmail);
         Member payee = memberRepository.findById(req.getPayeeMemberId())
-                .orElseThrow(() -> new IllegalArgumentException("수취인 회원을 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Payee member not found."));
         if (payee.getId().equals(payer.getId())) {
-            throw new IllegalArgumentException("자기 자신에게 자동이체를 설정할 수 없습니다.");
+            throw new IllegalArgumentException("You can't set up an auto-transfer to yourself.");
         }
         Contract contract = null;
         if (req.getContractId() != null) {
             contract = contractRepository.findById(req.getContractId())
-                    .orElseThrow(() -> new IllegalArgumentException("계약을 찾을 수 없습니다."));
+                    .orElseThrow(() -> new IllegalArgumentException("Contract not found."));
             if (!contract.getTenant().getId().equals(payer.getId())) {
-                throw new IllegalStateException("본인이 세입자인 계약만 자동이체에 연결할 수 있습니다.");
+                throw new IllegalStateException("You can only link auto-transfers to contracts where you are the tenant.");
             }
         }
 
@@ -94,7 +94,7 @@ public class AutoTransferService {
     public AutoTransferRes update(String payerEmail, Long scheduleId, AutoTransferUpdateReq req) {
         Member me = findMember(payerEmail);
         AutoTransferSchedule schedule = scheduleRepository.findById(scheduleId)
-                .orElseThrow(() -> new EntityNotFoundException("자동이체 스케줄을 찾을 수 없습니다."));
+                .orElseThrow(() -> new EntityNotFoundException("Auto-transfer schedule not found."));
         ensureOwner(schedule, me);
 
         LocalDateTime nextRunAt = null;
@@ -109,7 +109,7 @@ public class AutoTransferService {
     public void cancel(String payerEmail, Long scheduleId) {
         Member me = findMember(payerEmail);
         AutoTransferSchedule schedule = scheduleRepository.findById(scheduleId)
-                .orElseThrow(() -> new EntityNotFoundException("자동이체 스케줄을 찾을 수 없습니다."));
+                .orElseThrow(() -> new EntityNotFoundException("Auto-transfer schedule not found."));
         ensureOwner(schedule, me);
         schedule.cancel();
     }
@@ -158,16 +158,16 @@ public class AutoTransferService {
         notificationService.notify(
                 s.getPayer(),
                 NotificationType.PAYMENT,
-                "자동이체 결제 대기",
-                String.format("%s 자동이체 %,d원이 준비되었습니다. 결제 승인을 진행해 주세요.",
+                "Auto-transfer payment ready",
+                String.format("Your %s auto-transfer of %,d KRW is ready. Please approve the payment.",
                         s.getType().name(), s.getAmount()),
                 "/payments/" + payment.getId()
         );
         notificationService.notify(
                 s.getPayee(),
                 NotificationType.PAYMENT,
-                "자동이체 결제 대기 알림",
-                String.format("%s님의 %s 자동이체 %,d원이 결제 대기 상태입니다.",
+                "Auto-transfer payment pending",
+                String.format("%s's %s auto-transfer of %,d KRW is pending approval.",
                         s.getPayer().getName(), s.getType().name(), s.getAmount()),
                 "/payments/" + payment.getId()
         );
@@ -205,12 +205,12 @@ public class AutoTransferService {
 
     private Member findMember(String email) {
         return memberRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Member not found."));
     }
 
     private static void ensureOwner(AutoTransferSchedule schedule, Member me) {
         if (!schedule.getPayer().getId().equals(me.getId())) {
-            throw new IllegalStateException("본인의 자동이체 스케줄만 처리할 수 있습니다.");
+            throw new IllegalStateException("You can only manage your own auto-transfer schedules.");
         }
     }
 }

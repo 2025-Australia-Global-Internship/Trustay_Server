@@ -10,7 +10,7 @@ import lombok.ToString;
 @ToString
 public class LoginResultRes {
 
-    @Schema(description = "로그인 인증 토큰")
+    @Schema(description = "Login authentication token.")
     private String token;
 
 }

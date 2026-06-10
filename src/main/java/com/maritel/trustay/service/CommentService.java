@@ -29,7 +29,7 @@ public class CommentService {
     public CommentRes create(String email, Long postId, CommentReq req) {
         Member author = findMember(email);
         Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Post not found."));
 
         Comment saved = commentRepository.save(Comment.builder()
                 .post(post)
@@ -41,7 +41,7 @@ public class CommentService {
 
     public Page<CommentRes> list(Long postId, Pageable pageable) {
         if (!postRepository.existsById(postId)) {
-            throw new IllegalArgumentException("게시글을 찾을 수 없습니다.");
+            throw new IllegalArgumentException("Post not found.");
         }
         return commentRepository.findByPostId(postId, pageable).map(CommentRes::from);
     }
@@ -52,10 +52,10 @@ public class CommentService {
         Comment comment = findCommentInPost(postId, commentId);
 
         if (!comment.getAuthor().getId().equals(me.getId())) {
-            throw new IllegalStateException("본인이 작성한 댓글만 수정할 수 있습니다.");
+            throw new IllegalStateException("You can only edit comments you wrote yourself.");
         }
         if (Boolean.TRUE.equals(comment.getIsDeleted())) {
-            throw new IllegalStateException("삭제된 댓글은 수정할 수 없습니다.");
+            throw new IllegalStateException("This comment has been deleted and can't be edited.");
         }
         comment.updateContent(req.getContent());
         return CommentRes.from(comment);
@@ -66,7 +66,7 @@ public class CommentService {
         Member me = findMember(email);
         Comment comment = findCommentInPost(postId, commentId);
         if (!comment.getAuthor().getId().equals(me.getId())) {
-            throw new IllegalStateException("본인이 작성한 댓글만 삭제할 수 있습니다.");
+            throw new IllegalStateException("You can only delete comments you wrote yourself.");
         }
         // soft delete (목록 표시용 placeholder 유지)
         comment.softDelete();
@@ -74,15 +74,15 @@ public class CommentService {
 
     private Comment findCommentInPost(Long postId, Long commentId) {
         Comment comment = commentRepository.findById(commentId)
-                .orElseThrow(() -> new EntityNotFoundException("댓글을 찾을 수 없습니다."));
+                .orElseThrow(() -> new EntityNotFoundException("Comment not found."));
         if (!comment.getPost().getId().equals(postId)) {
-            throw new IllegalArgumentException("게시글과 댓글이 일치하지 않습니다.");
+            throw new IllegalArgumentException("This comment doesn't belong to the specified post.");
         }
         return comment;
     }
 
     private Member findMember(String email) {
         return memberRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Member not found."));
     }
 }

@@ -16,19 +16,19 @@ import java.util.List;
 @ToString
 public class SharehouseReq {
 
-    @NotBlank(message = "제목은 필수입니다.")
+    @NotBlank(message = "Title is required.")
     private String title;
 
-    @NotBlank(message = "상세 설명은 필수입니다.")
+    @NotBlank(message = "Description is required.")
     private String description;
 
-    @NotBlank(message = "주소는 필수입니다.")
+    @NotBlank(message = "Address is required.")
     private String address;
 
-    @NotNull(message = "주거 형태를 선택해주세요.")
+    @NotNull(message = "Please select a house type.")
     private HouseType houseType;
 
-    @NotNull(message = "월세는 필수입니다.")
+    @NotNull(message = "Rent price is required.")
     private Integer rentPrice;
 
     private Integer roomCount;
@@ -40,24 +40,24 @@ public class SharehouseReq {
     private List<String> features;
 
     // [변경] 파일 객체 대신, 업로드된 이미지 URL 리스트를 받습니다.
-    @NotEmpty(message = "이미지는 최소 1장 이상 등록해야 합니다.")
+    @NotEmpty(message = "Please upload at least one image.")
     private List<String> imageUrls;
 
-    @NotNull(message = "Bills Included 여부를 선택해주세요.")
+    @NotNull(message = "Please select whether bills are included.")
     private Boolean billsIncluded;
 
     private RoomType roomType;
 
-    @NotNull(message = "Bond 타입을 선택해주세요.")
+    @NotNull(message = "Please select a bond type.")
     private Integer bondType;
 
-    @NotNull(message = "Minimum Stay를 입력해주세요.")
+    @NotNull(message = "Please enter the minimum stay.")
     private Integer minimumStay;
 
-    @NotBlank(message = "gender를 입력해주세요.")
+    @NotBlank(message = "Please enter gender preference.")
     private String gender;
 
-    @NotBlank(message = "age를 입력해주세요.")
+    @NotBlank(message = "Please enter age preference.")
     private String age;
 
     /** 선택 항목 */

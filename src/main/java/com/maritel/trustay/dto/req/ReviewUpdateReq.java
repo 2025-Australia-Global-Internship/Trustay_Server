@@ -12,15 +12,15 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-@Schema(description = "리뷰 수정 요청")
+@Schema(description = "Request to update a review.")
 public class ReviewUpdateReq {
 
     @NotNull
     @Min(1) @Max(5)
-    @Schema(description = "평점 (1~5)", example = "4")
+    @Schema(description = "Rating (1-5).", example = "4")
     private Integer rating;
 
     @Size(max = 2000)
-    @Schema(description = "리뷰 내용 (최대 2000자)")
+    @Schema(description = "Review content (up to 2000 characters).")
     private String content;
 }

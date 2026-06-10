@@ -20,7 +20,7 @@ public class ChatStompController {
     private final ChatMessageService chatMessageService;
 
 
-    @Operation(summary = "채팅 메시지 전송")
+    @Operation(summary = "Send a chat message.")
     @MessageMapping("/chat/send")
     public void sendMessage(@Payload ChatMessageReq req) {
 

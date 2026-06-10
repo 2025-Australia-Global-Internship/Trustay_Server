@@ -41,16 +41,16 @@ public class ReviewService {
     public ReviewRes createReview(String email, ReviewReq req) {
         Member author = findMember(email);
         Sharehouse house = sharehouseRepository.findById(req.getHouseId())
-                .orElseThrow(() -> new IllegalArgumentException("해당 쉐어하우스가 존재하지 않습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Sharehouse not found."));
 
         // 권한: 해당 매물에 본인이 tenant 인 Contract (ACTIVE 또는 EXPIRED) 보유자만 작성 가능
         if (!hasEligibleStay(email, house.getId())) {
-            throw new IllegalStateException("해당 매물의 거주 이력(계약)이 있는 사용자만 리뷰를 작성할 수 있습니다.");
+            throw new IllegalStateException("Only users with a residency history (contract) for this listing can leave a review.");
         }
 
         // 1인 1회 제한
         if (reviewRepository.existsByAuthor_IdAndTargetHouse_Id(author.getId(), house.getId())) {
-            throw new IllegalStateException("이미 해당 매물에 리뷰를 작성하였습니다.");
+            throw new IllegalStateException("You've already written a review for this listing.");
         }
 
         Review review = Review.builder()
@@ -66,8 +66,8 @@ public class ReviewService {
                 house.getHost(),
                 author.getId(),
                 NotificationType.SYSTEM,
-                "내 매물에 새 리뷰가 등록되었습니다.",
-                String.format("[%s] %d점 후기가 작성되었습니다.", house.getTitle(), req.getRating()),
+                "New review on your listing",
+                String.format("A %d-star review was posted on \"%s\".", req.getRating(), house.getTitle()),
                 "/sharehouse/" + house.getId()
         );
 
@@ -92,9 +92,9 @@ public class ReviewService {
     public ReviewRes updateReview(String email, Long reviewId, ReviewUpdateReq req) {
         Member me = findMember(email);
         Review review = reviewRepository.findById(reviewId)
-                .orElseThrow(() -> new EntityNotFoundException("리뷰를 찾을 수 없습니다."));
+                .orElseThrow(() -> new EntityNotFoundException("Review not found."));
         if (!review.getAuthor().getId().equals(me.getId())) {
-            throw new IllegalStateException("본인이 작성한 리뷰만 수정할 수 있습니다.");
+            throw new IllegalStateException("You can only edit reviews you wrote yourself.");
         }
         review.update(req.getRating(), req.getContent());
         return ReviewRes.from(review);
@@ -104,9 +104,9 @@ public class ReviewService {
     public void deleteReview(String email, Long reviewId) {
         Member me = findMember(email);
         Review review = reviewRepository.findById(reviewId)
-                .orElseThrow(() -> new EntityNotFoundException("리뷰를 찾을 수 없습니다."));
+                .orElseThrow(() -> new EntityNotFoundException("Review not found."));
         if (!review.getAuthor().getId().equals(me.getId())) {
-            throw new IllegalStateException("본인이 작성한 리뷰만 삭제할 수 있습니다.");
+            throw new IllegalStateException("You can only delete reviews you wrote yourself.");
         }
         reviewRepository.delete(review);
     }
@@ -117,7 +117,7 @@ public class ReviewService {
 
     public Page<ReviewRes> getHouseReviews(Long houseId, Pageable pageable) {
         if (!sharehouseRepository.existsById(houseId)) {
-            throw new IllegalArgumentException("해당 쉐어하우스가 존재하지 않습니다.");
+            throw new IllegalArgumentException("Sharehouse not found.");
         }
         return reviewRepository.findByTargetHouseId(houseId, pageable).map(ReviewRes::from);
     }
@@ -140,7 +140,7 @@ public class ReviewService {
 
     private Member findMember(String email) {
         return memberRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Member not found."));
     }
 
     public record RatingSummary(Long houseId, double averageRating, long reviewCount) {}

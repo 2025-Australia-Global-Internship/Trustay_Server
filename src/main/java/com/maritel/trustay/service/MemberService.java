@@ -40,7 +40,7 @@ public class MemberService {
     public void signup(SignupReq dto) {
         // 1. 이메일 중복 검사
         if (memberRepository.findByEmail(dto.getEmail()).isPresent()) {
-            throw new IllegalStateException("이미 존재하는 이메일입니다.");
+            throw new IllegalStateException("This email is already in use.");
         }
 
         // 2. Member 저장
@@ -69,7 +69,7 @@ public class MemberService {
      */
     public ProfileRes getProfile(String email) {
         Member member = memberRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Member not found."));
 
         return ProfileRes.from(member);
     }
@@ -80,7 +80,7 @@ public class MemberService {
     @Transactional
     public void updateProfileInfo(String email, ProfileUpdateReq dto) {
         Member member = memberRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Member not found."));
 
         Profile profile = member.getProfile();
 
@@ -119,7 +119,7 @@ public class MemberService {
     @Transactional
     public void updateProfileImage(String email, MultipartFile profileImage) {
         Member member = memberRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Member not found."));
 
         Profile profile = member.getProfile();
 
@@ -133,7 +133,7 @@ public class MemberService {
 
         // 프로필 이미지 업로드 처리
         if (profileImage == null || profileImage.isEmpty()) {
-            throw new IllegalArgumentException("프로필 이미지가 제공되지 않았습니다.");
+            throw new IllegalArgumentException("Please attach a profile image.");
         }
 
         try {
@@ -150,7 +150,7 @@ public class MemberService {
             profile.updateProfileImage(image);
 
         } catch (Exception e) {
-            throw new RuntimeException("프로필 이미지 업데이트 실패", e);
+            throw new RuntimeException("Failed to update profile image.", e);
         }
     }
 }

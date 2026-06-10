@@ -11,21 +11,21 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-@Schema(description = "자동이체 스케줄 수정 요청")
+@Schema(description = "Request to update an auto-transfer schedule.")
 public class AutoTransferUpdateReq {
 
     @Min(1)
-    @Schema(description = "변경할 금액")
+    @Schema(description = "New amount.")
     private Long amount;
 
     @Min(1) @Max(31)
-    @Schema(description = "변경할 매월 결제일 (1~31)")
+    @Schema(description = "New day of month for payment (1-31).")
     private Integer dayOfMonth;
 
     @Size(max = 200)
-    @Schema(description = "변경할 메모")
+    @Schema(description = "New memo.")
     private String memo;
 
-    @Schema(description = "활성/비활성 토글")
+    @Schema(description = "Toggle active/inactive.")
     private Boolean active;
 }

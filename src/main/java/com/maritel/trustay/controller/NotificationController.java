@@ -26,13 +26,13 @@ import java.util.Map;
 @RequestMapping("/api/trustay/notifications")
 @RequiredArgsConstructor
 @Slf4j
-@Tag(name = "Notification API", description = "사용자 알림 및 FCM 디바이스 토큰 관리")
+@Tag(name = "Notification API", description = "User notifications and FCM device token management.")
 public class NotificationController {
 
     private final NotificationService notificationService;
 
-    @Operation(summary = "FCM 디바이스 토큰 등록/갱신",
-            description = "앱 실행 또는 로그인 시 호출. 동일 토큰이 이미 존재하면 소유자/디바이스 정보를 갱신합니다.")
+    @Operation(summary = "Register or refresh an FCM device token.",
+            description = "Call this on app launch or login. If the same token already exists, its owner/device info is updated.")
     @PostMapping("/fcm-token")
     public ResponseEntity<DataResponse<Void>> registerFcmToken(
             Principal principal,
@@ -45,7 +45,7 @@ public class NotificationController {
         }
     }
 
-    @Operation(summary = "FCM 디바이스 토큰 제거", description = "로그아웃 시 호출합니다.")
+    @Operation(summary = "Remove an FCM device token.", description = "Call this on logout.")
     @DeleteMapping("/fcm-token")
     public ResponseEntity<DataResponse<Void>> removeFcmToken(
             Principal principal,
@@ -60,7 +60,7 @@ public class NotificationController {
         }
     }
 
-    @Operation(summary = "내 알림 목록 (최신순, 페이징)")
+    @Operation(summary = "List my notifications (most recent first, paginated).")
     @GetMapping
     public ResponseEntity<DataResponse<PageResponse<NotificationRes>>> listMyNotifications(
             Principal principal,
@@ -69,14 +69,14 @@ public class NotificationController {
         return ResponseEntity.ok(DataResponse.of(ResponseCode.SUCCESS, new PageResponse<>(page)));
     }
 
-    @Operation(summary = "안 읽은 알림 개수")
+    @Operation(summary = "Get unread notification count.")
     @GetMapping("/unread-count")
     public ResponseEntity<DataResponse<Map<String, Long>>> unreadCount(Principal principal) {
         long count = notificationService.countUnread(principal.getName());
         return ResponseEntity.ok(DataResponse.of(ResponseCode.SUCCESS, Map.of("unreadCount", count)));
     }
 
-    @Operation(summary = "단일 알림 읽음 처리")
+    @Operation(summary = "Mark a notification as read.")
     @PatchMapping("/{id}/read")
     public ResponseEntity<DataResponse<Void>> markRead(
             Principal principal,
@@ -91,14 +91,14 @@ public class NotificationController {
         }
     }
 
-    @Operation(summary = "전체 알림 읽음 처리")
+    @Operation(summary = "Mark all notifications as read.")
     @PostMapping("/read-all")
     public ResponseEntity<DataResponse<Map<String, Integer>>> markAllRead(Principal principal) {
         int updated = notificationService.markAllRead(principal.getName());
         return ResponseEntity.ok(DataResponse.of(ResponseCode.SUCCESS, Map.of("updated", updated)));
     }
 
-    @Operation(summary = "알림 삭제")
+    @Operation(summary = "Delete a notification.")
     @DeleteMapping("/{id}")
     public ResponseEntity<DataResponse<Void>> deleteNotification(
             Principal principal,
