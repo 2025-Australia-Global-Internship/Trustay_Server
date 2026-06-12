@@ -2,6 +2,7 @@ package com.maritel.trustay.config;
 
 import com.maritel.trustay.filter.JwtFilter;
 import com.maritel.trustay.util.JwtUtil;
+import jakarta.servlet.DispatcherType;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -41,9 +42,14 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // ERROR/ASYNC 디스패치는 무조건 허용해야 컨트롤러에서 던진 예외가
+                        // /error 로 forward 될 때 Spring Security 의 anonymous 차단으로
+                        // 진짜 에러가 숨겨진 채 403 으로 떨어지는 현상을 막을 수 있다.
+                        .dispatcherTypeMatchers(DispatcherType.ERROR, DispatcherType.ASYNC).permitAll()
                         .requestMatchers(
                                 "/",
                                 "/index.html",
+                                "/error",
                                 "/api/members/signup",
                                 "/api/naver/book",
                                 "/swagger-ui/**",

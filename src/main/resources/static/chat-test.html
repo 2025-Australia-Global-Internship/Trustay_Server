@@ -11,6 +11,10 @@
         .mine { align-self: flex-end; background-color: #ffe812; color: #333; } /* 내 메시지: 카톡 노란색 */
         .others { align-self: flex-start; background-color: #fff; border: 1px solid #ccc; } /* 상대방: 흰색 */
         .system { align-self: center; font-size: 12px; color: #888; }
+        .chat-img { max-width: 220px; max-height: 220px; border-radius: 8px; display: block; margin-top: 4px; cursor: pointer; }
+        .input-row { display: flex; gap: 6px; align-items: center; margin-top: 10px; }
+        .input-row input[type=text] { flex: 1; padding: 6px 8px; }
+        .input-row button { padding: 6px 12px; }
     </style>
 </head>
 <body>
@@ -25,13 +29,24 @@
     <div class="system">먼저 연결 버튼을 눌러주세요.</div>
 </div>
 
-<div style="margin-top: 10px;">
-    <input type="text" id="messageInput" placeholder="메시지 내용" style="width: 300px;">
+<div class="input-row">
+    <input type="text" id="messageInput" placeholder="메시지 내용">
     <button onclick="sendMessage()" id="send-btn" disabled>2. 전송</button>
+</div>
+
+<div class="input-row">
+    <input type="file" id="imageInput" accept="image/jpeg,image/png,image/heic,image/heif">
+    <button onclick="sendImage()" id="image-btn" disabled>3. 이미지 전송</button>
+    <span id="image-status" style="color:#888; font-size: 12px;"></span>
 </div>
 
 <script>
     var stompClient = null;
+    // 채팅방 생성/이미지 업로드 등 REST 호출용 base URL.
+    // 같은 도메인에서 페이지를 열었다면 window.location.origin 을 그대로 쓰면 됩니다.
+    var API_BASE = window.location.origin && window.location.origin !== "null"
+        ? window.location.origin
+        : "http://trustay.mirim-it-show.site:8080";
 
     function connect() {
         var roomId = document.getElementById('roomId').value;
@@ -42,7 +57,7 @@
             return;
         }
 
-        var socket = new SockJS('http://trustay.mirim-it-show.site:8080/ws-stomp');
+        var socket = new SockJS(API_BASE + '/ws-stomp');
         stompClient = Stomp.over(socket);
 
         stompClient.connect({}, function (frame) {
@@ -50,6 +65,7 @@
             document.getElementById('connect-btn').innerText = "연결 완료";
             document.getElementById('connect-btn').disabled = true;
             document.getElementById('send-btn').disabled = false;
+            document.getElementById('image-btn').disabled = false;
 
             // [핵심] 해당 채팅방 경로를 구독하여 실시간으로 메시지를 수신
             stompClient.subscribe('/sub/chat/room/' + roomId, function (response) {
@@ -80,6 +96,54 @@
         document.getElementById('messageInput').value = '';
     }
 
+    function sendImage() {
+        var roomId = document.getElementById('roomId').value;
+        var senderId = document.getElementById('senderId').value;
+        var fileInput = document.getElementById('imageInput');
+        var statusEl = document.getElementById('image-status');
+
+        if (!roomId || !senderId) {
+            alert("Room ID와 My ID를 입력해주세요.");
+            return;
+        }
+        if (!fileInput.files || fileInput.files.length === 0) {
+            alert("이미지를 선택해주세요.");
+            return;
+        }
+
+        var formData = new FormData();
+        formData.append('image', fileInput.files[0]);
+
+        statusEl.innerText = '업로드 중...';
+        document.getElementById('image-btn').disabled = true;
+
+        // REST 엔드포인트: POST /api/chat/room/{roomId}/image?senderId=...
+        // 응답과 동시에 서버가 /sub/chat/room/{roomId} 로 브로드캐스트 하므로
+        // 별도로 화면에 그릴 필요 없이 STOMP 구독 콜백에서 자동 렌더됩니다.
+        fetch(API_BASE + '/api/chat/room/' + roomId + '/image?senderId=' + senderId, {
+            method: 'POST',
+            body: formData
+        }).then(function (resp) {
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            return resp.json();
+        }).then(function (json) {
+            statusEl.innerText = '전송 완료';
+            fileInput.value = '';
+        }).catch(function (err) {
+            console.error(err);
+            statusEl.innerText = '전송 실패: ' + err.message;
+        }).finally(function () {
+            document.getElementById('image-btn').disabled = false;
+        });
+    }
+
+    function escapeHtml(str) {
+        if (str == null) return '';
+        return String(str)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
     function renderMessage(res) {
         var chatBox = document.getElementById('chat-box');
         var myId = document.getElementById('senderId').value;
@@ -88,9 +152,20 @@
         var isMine = res.senderId == myId;
         var className = isMine ? 'mine' : 'others';
 
+        var body;
+        if (res.messageType === 'IMAGE') {
+            // 메시지 본문이 이미지 URL
+            body = '<img class="chat-img" src="' + escapeHtml(res.message) + '" ' +
+                   'alt="image" onclick="window.open(this.src, \'_blank\')">';
+        } else if (res.messageType === 'CONTRACT') {
+            body = '<a href="' + escapeHtml(res.message) + '" target="_blank">[계약서 PDF 보기]</a>';
+        } else {
+            body = escapeHtml(res.message);
+        }
+
         var msgHtml = '<div class="message ' + className + '">' +
-            '<strong>' + res.senderName + '</strong><br>' +
-            res.message +
+            '<strong>' + escapeHtml(res.senderName) + '</strong><br>' +
+            body +
             '</div>';
 
         chatBox.innerHTML += msgHtml;

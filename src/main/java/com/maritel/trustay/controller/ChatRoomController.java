@@ -10,7 +10,10 @@ import com.maritel.trustay.service.ChatMessageService;
 import com.maritel.trustay.service.ChatRoomService;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
+import org.apache.coyote.BadRequestException;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -51,5 +54,22 @@ public class ChatRoomController {
     public DataResponse<Void> leaveRoom(@PathVariable Long roomId, @RequestParam Long memberId) {
         chatRoomService.leaveRoom(roomId, memberId);
         return DataResponse.of(ResponseCode.SUCCESS);
+    }
+
+    /**
+     * 채팅방에 이미지 메시지 전송.
+     * multipart/form-data 로 이미지를 업로드하면 서버가 파일을 저장하고
+     * 해당 URL을 본문으로 하는 IMAGE 타입 메시지를 STOMP 구독자에게 브로드캐스트합니다.
+     */
+    @Operation(summary = "Send an image message to a chat room.",
+            description = "Uploads an image (jpg/jpeg/png/heic/heif) and broadcasts it to /sub/chat/room/{roomId} as an IMAGE message.")
+    @PostMapping(value = "/room/{roomId}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public DataResponse<ChatMessageRes> sendImageMessage(
+            @PathVariable Long roomId,
+            @RequestParam Long senderId,
+            @RequestPart("image") MultipartFile image
+    ) throws BadRequestException {
+        ChatMessageRes res = chatMessageService.sendImageMessage(roomId, senderId, image);
+        return DataResponse.of(ResponseCode.SUCCESS, res);
     }
 }
